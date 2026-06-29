@@ -74,7 +74,13 @@
     .stats-prefix {
       font-size: 0.82rem;
       color: #999;
-      margin: 18px 0 6px;
+      margin: 18px 0 2px;
+      text-align: center;
+    }
+    .capacity-line {
+      font-size: 0.75rem;
+      color: #bbb;
+      margin: 0 0 8px;
       text-align: center;
     }
 
@@ -285,6 +291,8 @@
     .stat-card:nth-child(1) .stat-value { color: #f9a825; }
     .stat-card:nth-child(2) .stat-value { color: #1e88e5; }
     .stat-card:nth-child(3) .stat-value { color: #e53935; }
+    .stat-card:nth-child(4) .stat-value { color: #7b1fa2; }
+    .stat-card:nth-child(5) .stat-value { color: #00897b; }
 
     .stat-value.bump {
       animation: bump 0.25s ease;
@@ -376,6 +384,7 @@
 
   <!-- Stats -->
   <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
+  <p class="capacity-line" id="capacityLine">&#x1F4A9; 0L / 15L</p>
   <div class="stats">
     <div class="stat-card">
       <div class="stat-icon">&#x1F4BC;</div>
@@ -391,6 +400,16 @@
       <div class="stat-icon">&#x1F527;</div>
       <div class="stat-label" data-l10n="stat_clogs">堵马桶次数</div>
       <div class="stat-value" id="statClogs">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">&#x1F4A6;</div>
+      <div class="stat-label" data-l10n="stat_overflow_count">漾出次数</div>
+      <div class="stat-value" id="statOverflowCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">&#x1F4A7;</div>
+      <div class="stat-label" data-l10n="stat_overflow_vol">漾出体积</div>
+      <div class="stat-value" id="statOverflowVol">0L</div>
     </div>
   </div>
 
@@ -423,6 +442,11 @@
       stat_people:  '带薪拉屎人数',
       stat_flushes: '冲水次数',
       stat_clogs:   '堵马桶次数',
+      stat_overflow_count: '漾出次数',
+      stat_overflow_vol: '漾出体积(L)',
+      capacity_line: '\u{1F4A9} {cur}L / 15L',
+      status_poop:   '拉了 {poop}L \u{1F4A9}',
+      status_overflow: '\u{1F4A6} 漾出 +{overflow}L水！拉了 {poop}L \u{1F4A9}',
       plunger:      '通一下',
       clog_badge:   '堵了',
       footer:       '\u{1F680} Hosted on GitHub Pages',
@@ -445,6 +469,11 @@
       stat_people:  'Paid Poops',
       stat_flushes: 'Flushes',
       stat_clogs:   'Clogs',
+      stat_overflow_count: 'Overflows',
+      stat_overflow_vol: 'Overflow (L)',
+      capacity_line: '\u{1F4A9} {cur}L / 15L',
+      status_poop:   'Pooped {poop}L \u{1F4A9}',
+      status_overflow: '\u{1F4A6} Overflow +{overflow}L! Pooped {poop}L \u{1F4A9}',
       plunger:      'Plunge',
       clog_badge:   'Clogged',
       footer:       '\u{1F680} Hosted on GitHub Pages',
@@ -463,6 +492,10 @@
   var serverFlushes = 0;
   var serverClogs = 0;
   var serverClogged = false;
+  var serverPoopVolume = 0;
+  var serverOverflowCount = 0;
+  var serverOverflowVolume = 0;
+  var CAPACITY = 15;
 
   // Local transient state
   var isFlushing = false;
@@ -473,9 +506,12 @@
   var clogBadge      = document.getElementById('clogBadge');
   var statusMsg      = document.getElementById('statusMsg');
   var plungerBtn     = document.getElementById('plungerBtn');
+  var capacityLine   = document.getElementById('capacityLine');
   var statPeople     = document.getElementById('statPeople');
   var statFlushes    = document.getElementById('statFlushes');
   var statClogs      = document.getElementById('statClogs');
+  var statOverflowCount = document.getElementById('statOverflowCount');
+  var statOverflowVol   = document.getElementById('statOverflowVol');
 
   // =====================================================================
   //  Language
@@ -540,6 +576,9 @@
       serverFlushes = typeof stats.flushes === 'number' ? stats.flushes : 0;
       serverClogs   = typeof stats.clogs   === 'number' ? stats.clogs   : 0;
       serverClogged = !!stats.clogged;
+      serverPoopVolume    = typeof stats.poopVolume    === 'number' ? stats.poopVolume : 0;
+      serverOverflowCount = typeof stats.overflowCount === 'number' ? stats.overflowCount : 0;
+      serverOverflowVolume= typeof stats.overflowVolume=== 'number' ? stats.overflowVolume : 0;
       updateStatsUI();
       updateCloggedUI();
       if (!serverClogged &&
@@ -564,6 +603,9 @@
           flushes: serverFlushes,
           clogs: serverClogs,
           clogged: serverClogged,
+          poopVolume: serverPoopVolume,
+          overflowCount: serverOverflowCount,
+          overflowVolume: serverOverflowVolume,
         })}}
       })
     })
@@ -578,6 +620,9 @@
       serverFlushes = s.flushes;
       serverClogs   = s.clogs;
       serverClogged = s.clogged;
+      serverPoopVolume    = typeof s.poopVolume    === 'number' ? s.poopVolume : 0;
+      serverOverflowCount = typeof s.overflowCount === 'number' ? s.overflowCount : 0;
+      serverOverflowVolume= typeof s.overflowVolume=== 'number' ? s.overflowVolume : 0;
       updateStatsUI();
       updateCloggedUI();
     })
@@ -605,6 +650,10 @@
     statPeople.textContent  = serverPeople;
     statFlushes.textContent = serverFlushes;
     statClogs.textContent   = serverClogs;
+    statOverflowCount.textContent = serverOverflowCount;
+    statOverflowVol.textContent   = serverOverflowVolume + 'L';
+    // Capacity display
+    capacityLine.textContent = '\u{1F4A9} ' + Math.min(serverPoopVolume, CAPACITY).toFixed(1) + 'L / ' + CAPACITY + 'L';
   }
 
   function bumpStat(el) {
@@ -657,7 +706,7 @@
   //  Event handlers
   // =====================================================================
   function handleFlush() {
-    if (isFlushing || serverClogged) return;
+    if (isFlushing) return; // Allow flush even when clogged (causes overflow)
 
     isFlushing = true;
     toiletEl.classList.add('flushing');
@@ -668,25 +717,43 @@
       toiletEl.classList.remove('flushing');
       isFlushing = false;
 
-      // Optimistic local update
       serverPeople++;
       serverFlushes++;
+
+      // Random poop 0.1-3L, cap at 15L capacity
+      var poop = parseFloat((Math.random() * 2.9 + 0.1).toFixed(1));
+      serverPoopVolume = Math.min(serverPoopVolume + poop, CAPACITY);
+
+      if (serverClogged) {
+        serverOverflowCount++;
+        serverOverflowVolume += 2;
+        bumpStat(statOverflowCount);
+        bumpStat(statOverflowVol);
+        // Dynamic overflow message
+        statusMsg.textContent = t('status_overflow')
+          .replace('{poop}', poop.toFixed(1))
+          .replace('{overflow}', '2');
+        statusMsg.className = 'status-msg clogged';
+      } else {
+        // Dynamic poop message
+        statusMsg.textContent = t('status_poop').replace('{poop}', poop.toFixed(1));
+        statusMsg.className = 'status-msg';
+      }
+
       updateStatsUI();
       bumpStat(statPeople);
       bumpStat(statFlushes);
 
-      if (Math.random() < 0.18) {
+      // Clog check (only when not already clogged)
+      if (!serverClogged && Math.random() < 0.18) {
         serverClogged = true;
         serverClogs++;
         updateCloggedUI();
         updateStatsUI();
         bumpStat(statClogs);
-        setStatus('status_clogged', 'clogged');
-      } else {
-        setStatus('status_ok', '');
       }
 
-      syncToGist(); // sync all changes in one shot
+      syncToGist();
     }, 650);
   }
 
@@ -724,8 +791,7 @@
 
   document.addEventListener('keydown', function(e) {
     if (e.key === ' ' || e.key === 'Enter') {
-      if (serverClogged) { handlePlunge(); }
-      else               { handleFlush(); }
+      handleFlush();
       e.preventDefault();
     }
   });
