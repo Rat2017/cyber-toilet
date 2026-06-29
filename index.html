@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>赛博厕所 - 带薪拉屎模拟器</title>
+  <!-- Firebase SDK for Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -231,6 +234,7 @@
     .stat-card:nth-child(1) .stat-value { color: #f9a825; }
     .stat-card:nth-child(2) .stat-value { color: #1e88e5; }
     .stat-card:nth-child(3) .stat-value { color: #e53935; }
+    .stat-card:nth-child(4) .stat-value { color: #43a047; }
 
     .stat-value.bump {
       animation: bump 0.25s ease;
@@ -335,6 +339,11 @@
       <div class="stat-label">堵马桶次数</div>
       <div class="stat-value" id="statClogs">0</div>
     </div>
+    <div class="stat-card online-card">
+      <div class="stat-icon">&#x1F465;</div>
+      <div class="stat-label">同时在线&#x1F4A9;友</div>
+      <div class="stat-value" id="statOnline">--</div>
+    </div>
   </div>
 
   <div class="footer">
@@ -356,6 +365,55 @@
     CLOG_RATE:   0.18,
     UNCLOG_RATE: 0.75,
   };
+
+  // ===== Firebase 实时在线人数 =====
+  // 使用教程: https://github.com/Rat2017/cyber-toilet#%E9%85%8D%E7%BD%AE%E5%AE%9E%E6%97%B6%E5%9C%A8%E7%BA%BF%E4%BA%BA%E6%95%B0
+  const FIREBASE_CONFIG = {
+    apiKey: "",
+    databaseURL: "",
+    projectId: "",
+  };
+
+  function initFirebase() {
+    const ok = FIREBASE_CONFIG.apiKey &&
+               FIREBASE_CONFIG.databaseURL &&
+               !FIREBASE_CONFIG.apiKey.includes("YOUR");
+
+    const el = document.getElementById('statOnline');
+
+    if (!ok || !window.firebase) {
+      // 未配置 Firebase 时显示模拟波动数据
+      let n = 3 + Math.floor(Math.random() * 4);
+      el.textContent = n;
+      setInterval(function() {
+        n += Math.random() < 0.4 ? 1 : (Math.random() < 0.5 ? -1 : 0);
+        if (n < 2) n = 2;
+        if (n > 18) n = 18;
+        el.textContent = n;
+      }, 3500);
+      return;
+    }
+
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      var db = firebase.database();
+      var sid = 's_' + Math.random().toString(36).substr(2, 8);
+      var myRef = db.ref('presence/' + sid);
+
+      db.ref('.info/connected').on('value', function(snap) {
+        if (snap.val() === true) {
+          myRef.set(true);
+          myRef.onDisconnect().remove();
+        }
+      });
+
+      db.ref('presence').on('value', function(snap) {
+        el.textContent = snap.numChildren() || 0;
+      });
+    } catch (e) {
+      el.textContent = '--';
+    }
+  }
 
   // ===== DOM refs =====
   const toilet     = document.getElementById('toilet');
@@ -482,6 +540,7 @@
   }, { passive: true });
 
   // ===== Init =====
+  initFirebase();
   updateStats();
   setStatus('&#x1F4A1; 点击马桶冲水');
 })();
