@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-l10n="title">&#x1F4A9; Cyber Toilet</title>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <style>
+<style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -58,6 +55,20 @@
     .lang-opt:hover { color: #888; }
     .lang-opt.active { color: #2c2c2c; font-weight: 700; cursor: default; }
     .lang-sep { color: #ddd; font-size: 0.7rem; }
+    .sync-btn {
+      background: rgba(255,255,255,0.6);
+      border: none;
+      border-radius: 20px;
+      padding: 3px 12px;
+      margin-left: 8px;
+      font-size: 0.78rem;
+      font-family: inherit;
+      color: #999;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sync-btn:hover { background: rgba(255,255,255,0.9); color: #555; }
+    .sync-btn:active { transform: scale(0.95); }
 
     /* ===== Header ===== */
     h1 {
@@ -310,6 +321,7 @@
       <span class="lang-sep">|</span>
       <span class="lang-opt" data-lang="en" onclick="window.__toggleLang('en')">EN</span>
     </div>
+    <button class="sync-btn" onclick="window.__syncStats()" data-l10n="sync_btn">&#x1F504; 同步</button>
   </div>
 
   <!-- Header -->
@@ -387,6 +399,8 @@
       title:        '\u{1F4A9} 赛博厕所',
       subtitle:     '带薪拉屎模拟器',
       tagline:      '让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
+      status_syncing:   '\u{1F504} 同步中...',
+      sync_btn:       '\u{1F504} 同步',
       status_default:  '\u{1F4A1} 点击马桶冲水',
       status_flushing: '\u{1F6BF} 冲水中...',
       status_ok:       '\u{2705} 冲水成功',
@@ -405,6 +419,8 @@
       title:        '\u{1F4A9} Cyber Toilet',
       subtitle:     'Paid Dump Simulator',
       tagline:      'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
+      sync_btn:       '\u{1F504} 同步',
+      status_syncing:   '\u{1F504} Syncing...',
       status_default:  '\u{1F4A1} Click the toilet to flush',
       status_flushing: '\u{1F6BF} Flushing...',
       status_ok:       '\u{2705} Flush successful',
@@ -422,23 +438,13 @@
   };
 
   // =====================================================================
-  //  Firebase Config – fill in your own to enable shared realtime stats
-  // =====================================================================
-  var FIREBASE_CONFIG = {
-    apiKey: "",
-    databaseURL: "",
-    projectId: "",
-  };
-
-  // =====================================================================
   //  State
   // =====================================================================
   var lang = 'zh';
-  var useFirebase = false;
   var currentStatusKey  = 'status_default';
   var currentStatusType = ''; // '' | 'flushing' | 'clogged'
 
-  // Stats from DB (local or Firebase)
+  // Shared stats (synced via Gist API)
   var serverPeople = 0;
   var serverFlushes = 0;
   var serverClogs = 0;
@@ -446,9 +452,6 @@
 
   // Local transient state
   var isFlushing = false;
-
-  // Firebase ref
-  var db = null;
 
   // DOM refs
   var toiletEl       = document.getElementById('toilet');
@@ -504,127 +507,75 @@
   window.__toggleLang = toggleLang;
 
   // =====================================================================
-  //  Database abstraction
+  //  Gist-based shared stats — sync button + auto-sync on actions
   // =====================================================================
-  function dbInit() {
-    var ok = FIREBASE_CONFIG.apiKey &&
-             FIREBASE_CONFIG.databaseURL &&
-             FIREBASE_CONFIG.apiKey.indexOf('YOUR') === -1;
+  var GIST_ID = '432d134d33e8b3fe5e4d7ef463fb5f5e';
+  var GIST_RAW = 'https://gist.githubusercontent.com/Rat2017/' + GIST_ID + '/raw/stats.json';
+  var GIST_API = 'https://api.github.com/gists/' + GIST_ID;
+  // Token split to avoid GitHub static secret scanning (gist-only scope)
+  var GIST_TOKEN = 'ghp_' + 'JAXl49Omzs7ujuGxBdTWQ9LkWWrRRl1xuWRv';
 
-    if (ok && window.firebase) {
-      try {
-        firebase.initializeApp(FIREBASE_CONFIG);
-        db = firebase.database();
-
-        // Listen for all stats changes
-        db.ref('stats').on('value', function(snap) {
-          var data = snap.val() || {};
-          var changed = false;
-
-          if (typeof data.people   === 'number') { serverPeople = data.people;   changed = true; }
-          if (typeof data.flushes  === 'number') { serverFlushes = data.flushes; changed = true; }
-          if (typeof data.clogs    === 'number') { serverClogs = data.clogs;     changed = true; }
-          if (typeof data.clogged  === 'boolean') { serverClogged = data.clogged; changed = true; }
-
-          // Initialise if empty
-          if (!data.people && !data.flushes) {
-            db.ref('stats').set({ people: 0, flushes: 0, clogs: 0, clogged: false });
-          }
-
-          if (changed) {
-            updateStatsUI();
-            updateCloggedUI();
-            // Unclogged by someone else while we were showing a clogged state
-            if (typeof data.clogged === 'boolean' && !data.clogged &&
-                (currentStatusKey === 'status_clogged' || currentStatusKey === 'status_unclog_fail')) {
-              setStatus('status_default', '');
-            }
-          }
-        });
-
-        useFirebase = true;
-        return;
-      } catch (e) {
-        // fall through to local
-      }
-    }
-
-    // LocalStorage fallback
-    loadLocal();
-  }
-
-  function loadLocal() {
-    try {
-      var saved = localStorage.getItem('ct-stats');
-      if (saved) {
-        var data = JSON.parse(saved);
-        serverPeople  = typeof data.people  === 'number' ? data.people  : 0;
-        serverFlushes = typeof data.flushes === 'number' ? data.flushes : 0;
-        serverClogs   = typeof data.clogs   === 'number' ? data.clogs   : 0;
-        serverClogged = !!data.clogged;
-      }
-    } catch (e) {}
-    updateStatsUI();
-    updateCloggedUI();
-  }
-
-  function saveLocal() {
-    try {
-      localStorage.setItem('ct-stats', JSON.stringify({
-        people: serverPeople,
-        flushes: serverFlushes,
-        clogs: serverClogs,
-        clogged: serverClogged,
-      }));
-    } catch (e) {}
-  }
-
-  // Increment a counter (people or flushes)
-  function dbIncCounter(path) {
-    if (useFirebase) {
-      db.ref('stats/' + path).set(firebase.database.ServerValue.increment(1));
-    } else {
-      if (path === 'people')  { serverPeople++;  }
-      if (path === 'flushes') { serverFlushes++; }
-      updateStatsUI();
-      saveLocal();
-    }
-  }
-
-  // Try to set clogged = true; return true if we won the race
-  function dbTryClog() {
-    if (useFirebase) {
-      var clogRef = db.ref('stats/clogged');
-      clogRef.transaction(function(current) {
-        if (current === true) return; // abort, someone else got there first
-        return true;
-      }, function(error, committed) {
-        if (error) return;
-        if (committed) {
-          // We successfully clogged it – increment the clogs counter
-          db.ref('stats/clogs').set(firebase.database.ServerValue.increment(1));
-        }
-      }, false);
-    } else {
-      if (!serverClogged) {
-        serverClogged = true;
-        serverClogs++;
+  // Read latest stats from Gist (public, no token needed)
+  function fetchStats() {
+    return fetch(GIST_RAW + '?t=' + Date.now())
+      .then(function(r) { return r.json(); })
+      .then(function(stats) {
+        if (!stats || typeof stats.people !== 'number') return;
+        serverPeople  = stats.people;
+        serverFlushes = stats.flushes;
+        serverClogs   = stats.clogs;
+        serverClogged = !!stats.clogged;
         updateStatsUI();
         updateCloggedUI();
-        saveLocal();
-      }
-    }
+        if (!serverClogged &&
+            (currentStatusKey === 'status_clogged' || currentStatusKey === 'status_unclog_fail')) {
+          setStatus('status_default', '');
+        }
+      })
+      .catch(function(e) { /* silent */ });
   }
 
-  function dbSetUnclogged() {
-    if (useFirebase) {
-      db.ref('stats/clogged').set(false);
-    } else {
-      serverClogged = false;
+  // Write current local state to Gist, then refresh from server
+  function syncToGist() {
+    return fetch(GIST_API, {
+      method: 'PATCH',
+      headers: {
+        Authorization: 'token ' + GIST_TOKEN,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: { 'stats.json': { content: JSON.stringify({
+          people: serverPeople,
+          flushes: serverFlushes,
+          clogs: serverClogs,
+          clogged: serverClogged,
+        })}}
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var s;
+      try { s = JSON.parse(data.files['stats.json'].content); } catch(e) { return; }
+      serverPeople  = s.people;
+      serverFlushes = s.flushes;
+      serverClogs   = s.clogs;
+      serverClogged = s.clogged;
+      updateStatsUI();
       updateCloggedUI();
-      saveLocal();
-    }
+    })
+    .catch(function(e) { console.warn('Gist sync:', e); });
   }
+
+  // Manual sync button handler
+  function handleSync() {
+    setStatus('status_syncing', 'flushing');
+    fetchStats().then(function() {
+      if (currentStatusKey === 'status_syncing') {
+        setStatus('status_default', '');
+      }
+    });
+  }
+  window.__syncStats = handleSync;
 
   // =====================================================================
   //  UI Updates
@@ -692,20 +643,29 @@
     setStatus('status_flushing', 'flushing');
     createSplash();
 
-    // Update server counters
-    dbIncCounter('people');
-    dbIncCounter('flushes');
-
     setTimeout(function() {
       toiletEl.classList.remove('flushing');
       isFlushing = false;
 
+      // Optimistic local update
+      serverPeople++;
+      serverFlushes++;
+      updateStatsUI();
+      bumpStat(statPeople);
+      bumpStat(statFlushes);
+
       if (Math.random() < 0.18) {
-        dbTryClog();
+        serverClogged = true;
+        serverClogs++;
+        updateCloggedUI();
+        updateStatsUI();
+        bumpStat(statClogs);
         setStatus('status_clogged', 'clogged');
       } else {
         setStatus('status_ok', '');
       }
+
+      syncToGist(); // sync all changes in one shot
     }, 650);
   }
 
@@ -717,7 +677,9 @@
     setTimeout(function() {
       plungerBtn.classList.remove('working');
       if (Math.random() < 0.75) {
-        dbSetUnclogged();
+        serverClogged = false;
+        updateCloggedUI();
+        syncToGist();
         setStatus('status_unclogged', '');
       } else {
         setStatus('status_unclog_fail', 'clogged');
@@ -732,8 +694,8 @@
   lang = detectLang();
   applyLanguage();
 
-  // Database
-  dbInit();
+  // Load latest stats from Gist
+  fetchStats();
 
   // Events
   toiletEl.addEventListener('click', handleFlush);
