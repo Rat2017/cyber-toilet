@@ -400,6 +400,7 @@
       subtitle:     '带薪拉屎模拟器',
       tagline:      '让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
       status_syncing:   '\u{1F504} 同步中...',
+      status_sync_err:  '\u{274C} 同步失败，点\u{1F504}重试',
       sync_btn:       '\u{1F504} 同步',
       status_default:  '\u{1F4A1} 点击马桶冲水',
       status_flushing: '\u{1F6BF} 冲水中...',
@@ -421,6 +422,7 @@
       tagline:      'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
       sync_btn:       '\u{1F504} 同步',
       status_syncing:   '\u{1F504} Syncing...',
+      status_sync_err:  '\u{274C} Sync failed, click \u{1F504} to retry',
       status_default:  '\u{1F4A1} Click the toilet to flush',
       status_flushing: '\u{1F6BF} Flushing...',
       status_ok:       '\u{2705} Flush successful',
@@ -507,35 +509,36 @@
   window.__toggleLang = toggleLang;
 
   // =====================================================================
-  //  Gist-based shared stats — sync button + auto-sync on actions
+  //  Gist-based shared stats — all reads & writes via API
   // =====================================================================
   var GIST_ID = '432d134d33e8b3fe5e4d7ef463fb5f5e';
-  var GIST_RAW = 'https://gist.githubusercontent.com/Rat2017/' + GIST_ID + '/raw/stats.json';
   var GIST_API = 'https://api.github.com/gists/' + GIST_ID;
-  // Token split to avoid GitHub static secret scanning (gist-only scope)
   var GIST_TOKEN = 'ghp_' + 'JAXl49Omzs7ujuGxBdTWQ9LkWWrRRl1xuWRv';
 
-  // Read latest stats from Gist (public, no token needed)
+  // Read stats from Gist API -> update local state
   function fetchStats() {
-    return fetch(GIST_RAW + '?t=' + Date.now())
-      .then(function(r) { return r.json(); })
-      .then(function(stats) {
-        if (!stats || typeof stats.people !== 'number') return;
-        serverPeople  = stats.people;
-        serverFlushes = stats.flushes;
-        serverClogs   = stats.clogs;
-        serverClogged = !!stats.clogged;
-        updateStatsUI();
-        updateCloggedUI();
-        if (!serverClogged &&
-            (currentStatusKey === 'status_clogged' || currentStatusKey === 'status_unclog_fail')) {
-          setStatus('status_default', '');
-        }
-      })
-      .catch(function(e) { /* silent */ });
+    return fetch(GIST_API, {
+      headers: { Authorization: 'token ' + GIST_TOKEN }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var stats;
+      try { stats = JSON.parse(data.files['stats.json'].content); } catch(e) { return; }
+      serverPeople  = typeof stats.people  === 'number' ? stats.people  : 0;
+      serverFlushes = typeof stats.flushes === 'number' ? stats.flushes : 0;
+      serverClogs   = typeof stats.clogs   === 'number' ? stats.clogs   : 0;
+      serverClogged = !!stats.clogged;
+      updateStatsUI();
+      updateCloggedUI();
+      if (!serverClogged &&
+          (currentStatusKey === 'status_clogged' || currentStatusKey === 'status_unclog_fail')) {
+        setStatus('status_default', '');
+      }
+    })
+    .catch(function(e) { console.warn('Gist fetch:', e); });
   }
 
-  // Write current local state to Gist, then refresh from server
+  // Write current local state to Gist, then refresh from response
   function syncToGist() {
     return fetch(GIST_API, {
       method: 'PATCH',
@@ -552,10 +555,13 @@
         })}}
       })
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(data) {
       var s;
-      try { s = JSON.parse(data.files['stats.json'].content); } catch(e) { return; }
+      try { s = JSON.parse(data.files['stats.json'].content); } catch(e) { throw new Error('parse'); }
       serverPeople  = s.people;
       serverFlushes = s.flushes;
       serverClogs   = s.clogs;
@@ -563,10 +569,13 @@
       updateStatsUI();
       updateCloggedUI();
     })
-    .catch(function(e) { console.warn('Gist sync:', e); });
+    .catch(function(e) {
+      console.warn('Gist sync:', e);
+      setStatus('status_sync_err', 'clogged');
+    });
   }
 
-  // Manual sync button handler
+  // Manual sync button
   function handleSync() {
     setStatus('status_syncing', 'flushing');
     fetchStats().then(function() {
