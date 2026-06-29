@@ -70,6 +70,14 @@
     .sync-btn:hover { background: rgba(255,255,255,0.9); color: #555; }
     .sync-btn:active { transform: scale(0.95); }
 
+    /* ===== Stats prefix ===== */
+    .stats-prefix {
+      font-size: 0.82rem;
+      color: #999;
+      margin: 18px 0 6px;
+      text-align: center;
+    }
+
     /* ===== Header ===== */
     h1 {
       font-size: 2.2rem;
@@ -308,6 +316,7 @@
       .stat-label { font-size: 0.65rem; }
       .stats { gap: 8px; }
       .plunger-btn { font-size: 32px; }
+      .stats-prefix { font-size: 0.72rem; margin: 14px 0 4px; }
     }
   </style>
 </head>
@@ -366,6 +375,7 @@
   </div>
 
   <!-- Stats -->
+  <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
   <div class="stats">
     <div class="stat-card">
       <div class="stat-icon">&#x1F4BC;</div>
@@ -402,6 +412,7 @@
       status_syncing:   '\u{1F504} 同步中...',
       status_sync_err:  '\u{274C} 同步失败，点\u{1F504}重试',
       sync_btn:       '\u{1F504} 同步',
+      stats_prefix:   '在你之前已有：',
       status_default:  '\u{1F4A1} 点击马桶冲水',
       status_flushing: '\u{1F6BF} 冲水中...',
       status_ok:       '\u{2705} 冲水成功',
@@ -421,6 +432,7 @@
       subtitle:     'Paid Dump Simulator',
       tagline:      'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
       sync_btn:       '\u{1F504} 同步',
+      stats_prefix:   'Before you:',
       status_syncing:   '\u{1F504} Syncing...',
       status_sync_err:  '\u{274C} Sync failed, click \u{1F504} to retry',
       status_default:  '\u{1F4A1} Click the toilet to flush',
