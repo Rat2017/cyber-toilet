@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>赛博厕所 - 带薪拉屎模拟器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #efe8e0;
+      background-image:
+        linear-gradient(90deg, rgba(180, 165, 150, 0.12) 1px, transparent 1px),
+        linear-gradient(rgba(180, 165, 150, 0.12) 1px, transparent 1px);
+      background-size: 48px 48px;
+      font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      user-select: none;
+      padding: 20px;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      color: #2c2c2c;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 2px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #999;
+      margin-bottom: 24px;
+    }
+
+    /* ===== Toilet ===== */
+    .toilet-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: filter 0.3s;
+    }
+    .toilet-wrapper:not(.disabled):not(.flushing):hover {
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.12));
+    }
+    .toilet-wrapper:not(.disabled):not(.flushing):active svg {
+      transform: scale(0.97);
+    }
+    .toilet-wrapper.disabled { cursor: not-allowed; }
+
+    .toilet-svg {
+      width: 220px;
+      height: 320px;
+      display: block;
+      transition: transform 0.1s;
+    }
+
+    /* Clogged water color */
+    .toilet-wrapper.clogged .water { fill: #e8744a; transition: fill 0.5s; }
+    .toilet-wrapper.clogged .water-highlight { fill: #f0987a; transition: fill 0.5s; }
+
+    /* Flush shake */
+    .toilet-wrapper.flushing .toilet-svg {
+      animation: shake 0.55s ease-in-out;
+    }
+    @keyframes shake {
+      0%   { transform: translateX(0); }
+      12%  { transform: translateX(-7px) rotate(-1deg); }
+      25%  { transform: translateX(7px) rotate(1deg); }
+      37%  { transform: translateX(-5px) rotate(-0.6deg); }
+      50%  { transform: translateX(5px) rotate(0.6deg); }
+      62%  { transform: translateX(-3px); }
+      75%  { transform: translateX(3px); }
+      87%  { transform: translateX(-1px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Water swirl */
+    .toilet-wrapper.flushing .water {
+      animation: swirl 0.5s ease-in-out;
+    }
+    .toilet-wrapper.flushing .water-highlight {
+      animation: swirl 0.5s ease-in-out reverse;
+    }
+    @keyframes swirl {
+      0%   { transform: scale(1, 1); }
+      30%  { transform: scale(0.82, 0.65); }
+      60%  { transform: scale(1.08, 0.88); }
+      100% { transform: scale(1, 1); }
+    }
+
+    /* ===== Splash particles ===== */
+    .splash-area {
+      position: absolute;
+      bottom: 78px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 110px;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 2;
+    }
+    .drop {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 8px;
+      height: 10px;
+      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+      background: linear-gradient(180deg, #81d4fa, #29b6f6);
+      opacity: 0;
+      animation: drop-fly 0.7s ease-out forwards;
+    }
+    .drop:nth-child(odd) { width: 6px; height: 8px; }
+    .drop:nth-child(3n)  { width: 10px; height: 12px; }
+    @keyframes drop-fly {
+      0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); }
+    }
+
+    /* ===== Clog badge ===== */
+    .clog-badge {
+      position: absolute;
+      top: -10px;
+      right: -18px;
+      background: #e65100;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 3;
+      white-space: nowrap;
+    }
+    .clog-badge.show { opacity: 1; transform: scale(1); }
+
+    /* ===== Status message ===== */
+    .status-msg {
+      margin-top: 14px;
+      font-size: 0.95rem;
+      color: #888;
+      min-height: 1.6em;
+      transition: color 0.3s;
+    }
+    .status-msg.clogged   { color: #d84315; font-weight: 600; }
+    .status-msg.flushing  { color: #0288d1; }
+
+    /* ===== Plunger ===== */
+    .plunger-area {
+      margin-top: 12px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .plunger-btn {
+      display: none;
+      cursor: pointer;
+      font-size: 42px;
+      line-height: 1;
+      background: none;
+      border: none;
+      padding: 8px 24px;
+      border-radius: 30px;
+      transition: background 0.2s;
+      animation: plunge-idle 1.4s ease-in-out infinite;
+    }
+    .plunger-btn:hover { background: rgba(0,0,0,0.05); }
+    .plunger-btn.show { display: inline-block; }
+    .plunger-btn.working {
+      animation: plunge-work 0.5s ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes plunge-idle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes plunge-work {
+      0%   { transform: translateY(0) rotate(0deg); }
+      20%  { transform: translateY(-35px) rotate(-8deg); }
+      40%  { transform: translateY(8px) rotate(4deg); }
+      60%  { transform: translateY(-20px) rotate(-5deg); }
+      80%  { transform: translateY(4px) rotate(2deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    /* ===== Stats ===== */
+    .stats {
+      display: flex;
+      gap: 14px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 14px 22px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      min-width: 120px;
+      flex: 1;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+    }
+    .stat-icon  { font-size: 24px; margin-bottom: 2px; }
+    .stat-label { font-size: 0.8rem; color: #999; margin-bottom: 2px; white-space: nowrap; }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #2c2c2c;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-card:nth-child(1) .stat-value { color: #f9a825; }
+    .stat-card:nth-child(2) .stat-value { color: #1e88e5; }
+    .stat-card:nth-child(3) .stat-value { color: #e53935; }
+
+    .stat-value.bump {
+      animation: bump 0.25s ease;
+    }
+    @keyframes bump {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    /* ===== Footer ===== */
+    .footer {
+      margin-top: 32px;
+      font-size: 0.75rem;
+      color: #bbb;
+      letter-spacing: 0.5px;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 480px) {
+      h1 { font-size: 1.7rem; }
+      .subtitle { font-size: 0.85rem; margin-bottom: 16px; }
+      .toilet-svg { width: 160px; height: 240px; }
+      .splash-area { bottom: 56px; width: 100px; height: 80px; }
+      .stat-card { padding: 10px 16px; min-width: 80px; }
+      .stat-value { font-size: 1.4rem; }
+      .stat-icon { font-size: 20px; }
+      .stat-label { font-size: 0.7rem; }
+      .stats { gap: 10px; }
+      .plunger-btn { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>&#x1F4A9; 赛博厕所</h1>
+  <p class="subtitle">带薪拉屎模拟器 · 点击马桶冲水</p>
+
+  <!-- Toilet -->
+  <div class="toilet-wrapper" id="toilet">
+    <svg class="toilet-svg" viewBox="0 0 240 350" aria-label="马桶">
+      <!-- Tank body -->
+      <rect x="55" y="28" width="130" height="102" rx="8" fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
+      <!-- Tank lid -->
+      <rect x="48" y="20" width="144" height="18" rx="9" fill="#ffffff" stroke="#d0d0d0" stroke-width="2"/>
+      <!-- Lid highlight -->
+      <rect x="54" y="22" width="132" height="4" rx="2" fill="#f4f4f4"/>
+      <!-- Flush handle -->
+      <rect x="180" y="56" width="14" height="28" rx="4" fill="#c8c8c8" stroke="#aaa" stroke-width="1.5"/>
+      <rect x="182" y="62" width="4" height="16" rx="2" fill="#aaa"/>
+      <!-- Bowl outer body -->
+      <path d="M 34 140 Q 12 222 34 278 Q 66 332 120 337 Q 174 332 206 278 Q 228 222 206 140 Z"
+            fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
+      <!-- Bowl inner shadow -->
+      <path d="M 39 144 Q 20 222 39 272 Q 68 325 120 330 Q 172 325 201 272 Q 220 222 201 144 Z"
+            fill="#f6f6f6"/>
+      <!-- Seat outer rim -->
+      <ellipse cx="120" cy="158" rx="88" ry="36" fill="#ffffff" stroke="#d0d0d0" stroke-width="2"/>
+      <!-- Seat inner rim -->
+      <ellipse cx="120" cy="158" rx="72" ry="26" fill="#f4f4f4" stroke="#d6d6d6" stroke-width="1.5"/>
+      <!-- Bowl interior -->
+      <ellipse cx="120" cy="160" rx="68" ry="22" fill="#efefef"/>
+      <!-- Water -->
+      <ellipse class="water" cx="120" cy="166" rx="58" ry="17" fill="#4fc3f7"/>
+      <!-- Water highlight -->
+      <ellipse class="water-highlight" cx="108" cy="162" rx="28" ry="6" fill="#81d4fa" opacity="0.55"/>
+      <!-- Seat screws -->
+      <circle cx="72" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width="0.5"/>
+      <circle cx="168" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width="0.5"/>
+    </svg>
+
+    <!-- Splash particles container -->
+    <div class="splash-area" id="splashArea"></div>
+
+    <!-- Clog badge -->
+    <div class="clog-badge" id="clogBadge">&#x1F9F1; 堵了</div>
+  </div>
+
+  <!-- Status message -->
+  <div class="status-msg" id="statusMsg">&#x1F4A1; 点击马桶冲水</div>
+
+  <!-- Plunger -->
+  <div class="plunger-area">
+    <button class="plunger-btn" id="plungerBtn">&#x1F9F9; 通一下</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-icon">&#x1F4BC;</div>
+      <div class="stat-label">带薪拉屎人数</div>
+      <div class="stat-value" id="statPeople">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">&#x1F6BF;</div>
+      <div class="stat-label">冲水次数</div>
+      <div class="stat-value" id="statFlushes">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">&#x1F527;</div>
+      <div class="stat-label">堵马桶次数</div>
+      <div class="stat-value" id="statClogs">0</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    &#x1F680; Hosted on GitHub Pages
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== State =====
+  const state = {
+    people:  Math.floor(Math.random() * 80) + 35,
+    flushes: Math.floor(Math.random() * 180) + 60,
+    clogs:   Math.floor(Math.random() * 12) + 2,
+    isFlushing: false,
+    isClogged:  false,
+    CLOG_RATE:   0.18,
+    UNCLOG_RATE: 0.75,
+  };
+
+  // ===== DOM refs =====
+  const toilet     = document.getElementById('toilet');
+  const splashArea = document.getElementById('splashArea');
+  const clogBadge  = document.getElementById('clogBadge');
+  const statusMsg  = document.getElementById('statusMsg');
+  const plungerBtn = document.getElementById('plungerBtn');
+
+  const statPeople  = document.getElementById('statPeople');
+  const statFlushes = document.getElementById('statFlushes');
+  const statClogs   = document.getElementById('statClogs');
+
+  // ===== Display helpers =====
+  function updateStats() {
+    statPeople.textContent  = state.people;
+    statFlushes.textContent = state.flushes;
+    statClogs.textContent   = state.clogs;
+  }
+
+  function bump(el) {
+    el.classList.remove('bump');
+    void el.offsetWidth; // force reflow
+    el.classList.add('bump');
+  }
+
+  function setStatus(text, className) {
+    statusMsg.textContent = text;
+    statusMsg.className = 'status-msg' + (className ? ' ' + className : '');
+  }
+
+  // ===== Splash particles =====
+  function createSplash() {
+    const count = 14 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < count; i++) {
+      const drop = document.createElement('div');
+      drop.className = 'drop';
+      const angle = -30 + Math.random() * 60;
+      const dist  = 40 + Math.random() * 80;
+      const rad   = angle * Math.PI / 180;
+      drop.style.setProperty('--dx', (Math.sin(rad) * dist) + 'px');
+      drop.style.setProperty('--dy', (-Math.cos(rad) * dist - 20) + 'px');
+      drop.style.left = (Math.random() * 60 - 30) + 'px';
+      drop.style.animationDelay    = (Math.random() * 0.15) + 's';
+      drop.style.animationDuration = (0.5 + Math.random() * 0.3) + 's';
+      splashArea.appendChild(drop);
+      setTimeout(() => drop.remove(), 1000);
+    }
+  }
+
+  // ===== Plunger =====
+  function handlePlunge() {
+    if (plungerBtn.classList.contains('working')) return;
+    plungerBtn.classList.add('working');
+    setStatus('&#x1F9F9; 正在疏通...', 'flushing');
+
+    setTimeout(() => {
+      plungerBtn.classList.remove('working');
+      if (Math.random() < state.UNCLOG_RATE) {
+        state.isClogged = false;
+        toilet.classList.remove('clogged');
+        clogBadge.classList.remove('show');
+        plungerBtn.classList.remove('show');
+        setStatus('&#x2705; 通了！可以继续冲水了');
+        updateStats();
+      } else {
+        setStatus('&#x1F630; 没通开，再试试...', 'clogged');
+      }
+    }, 600);
+  }
+
+  // ===== Flush =====
+  function handleFlush() {
+    if (state.isFlushing || state.isClogged) return;
+
+    state.isFlushing = true;
+    toilet.classList.add('flushing');
+    setStatus('&#x1F6BF; 冲水中...', 'flushing');
+    createSplash();
+
+    setTimeout(() => {
+      toilet.classList.remove('flushing');
+      state.isFlushing = false;
+
+      // Always increment flush stats
+      state.people  += 1;
+      state.flushes += 1;
+      updateStats();
+      bump(statPeople);
+      bump(statFlushes);
+
+      // Random clog check
+      if (Math.random() < state.CLOG_RATE) {
+        state.clogs += 1;
+        state.isClogged = true;
+        toilet.classList.add('clogged');
+        clogBadge.classList.add('show');
+        plungerBtn.classList.add('show');
+        updateStats();
+        bump(statClogs);
+        setStatus('&#x1F4A9; 堵了！快用皮搋子通一通...', 'clogged');
+      } else {
+        setStatus('&#x2705; 冲水成功');
+      }
+    }, 650);
+  }
+
+  // ===== Plumbing =====
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function(e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      if (state.isClogged) { handlePlunge(); }
+      else                 { handleFlush(); }
+      e.preventDefault();
+    }
+  });
+
+  // Click / tap events
+  toilet.addEventListener('click', handleFlush);
+  plungerBtn.addEventListener('click', handlePlunge);
+
+  // Touch device: prevent double-tap zoom on the toilet
+  toilet.addEventListener('touchstart', function(e) {
+    // Let the click event handle the logic; just prevent potential zoom
+  }, { passive: true });
+
+  // ===== Init =====
+  updateStats();
+  setStatus('&#x1F4A1; 点击马桶冲水');
+})();
+</script>
+</body>
+</html>
