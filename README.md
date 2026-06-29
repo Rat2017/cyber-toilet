@@ -17,7 +17,7 @@
 
 ## 配置实时在线人数
 
-页面底部的"同时在线💩友"默认显示模拟波动数据。要显示真实在线人数，需配置 Firebase：
+页面底部的"同时在线💩友"需配置 Firebase 后显示真实数据：
 
 1. 前往 [Firebase Console](https://console.firebase.google.com/) 创建一个项目
 2. 左侧菜单 → **构建** → **Realtime Database** → **创建数据库**（选择测试模式）

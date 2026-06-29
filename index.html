@@ -381,18 +381,7 @@
 
     const el = document.getElementById('statOnline');
 
-    if (!ok || !window.firebase) {
-      // 未配置 Firebase 时显示模拟波动数据
-      let n = 3 + Math.floor(Math.random() * 4);
-      el.textContent = n;
-      setInterval(function() {
-        n += Math.random() < 0.4 ? 1 : (Math.random() < 0.5 ? -1 : 0);
-        if (n < 2) n = 2;
-        if (n > 18) n = 18;
-        el.textContent = n;
-      }, 3500);
-      return;
-    }
+    if (!ok || !window.firebase) return; // 保持 '--'
 
     try {
       firebase.initializeApp(FIREBASE_CONFIG);
