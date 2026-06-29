@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>赛博厕所 - 带薪拉屎模拟器</title>
-<style>
+  <title data-l10n="title">&#x1F4A9; Cyber Toilet</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -25,22 +28,57 @@
 
     .container {
       text-align: center;
-      max-width: 500px;
+      max-width: 520px;
       width: 100%;
+      position: relative;
     }
 
+    /* ===== Language switcher ===== */
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .lang-switch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.8rem;
+    }
+    .lang-opt {
+      cursor: pointer;
+      color: #bbb;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .lang-opt:hover { color: #888; }
+    .lang-opt.active { color: #2c2c2c; font-weight: 700; cursor: default; }
+    .lang-sep { color: #ddd; font-size: 0.7rem; }
+
+    /* ===== Header ===== */
     h1 {
-      font-size: 2.4rem;
+      font-size: 2.2rem;
       color: #2c2c2c;
       font-weight: 800;
       letter-spacing: 2px;
       margin-bottom: 2px;
     }
-
     .subtitle {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: #999;
-      margin-bottom: 24px;
+      margin-bottom: 6px;
+    }
+    .tagline {
+      font-size: 0.8rem;
+      color: #bbb;
+      font-style: italic;
+      margin-bottom: 20px;
+      line-height: 1.5;
+      padding: 0 8px;
     }
 
     /* ===== Toilet ===== */
@@ -60,17 +98,15 @@
     .toilet-wrapper.disabled { cursor: not-allowed; }
 
     .toilet-svg {
-      width: 220px;
-      height: 320px;
+      width: 210px;
+      height: 310px;
       display: block;
       transition: transform 0.1s;
     }
 
-    /* Clogged water color */
     .toilet-wrapper.clogged .water { fill: #e8744a; transition: fill 0.5s; }
     .toilet-wrapper.clogged .water-highlight { fill: #f0987a; transition: fill 0.5s; }
 
-    /* Flush shake */
     .toilet-wrapper.flushing .toilet-svg {
       animation: shake 0.55s ease-in-out;
     }
@@ -86,13 +122,8 @@
       100% { transform: translateX(0); }
     }
 
-    /* Water swirl */
-    .toilet-wrapper.flushing .water {
-      animation: swirl 0.5s ease-in-out;
-    }
-    .toilet-wrapper.flushing .water-highlight {
-      animation: swirl 0.5s ease-in-out reverse;
-    }
+    .toilet-wrapper.flushing .water { animation: swirl 0.5s ease-in-out; }
+    .toilet-wrapper.flushing .water-highlight { animation: swirl 0.5s ease-in-out reverse; }
     @keyframes swirl {
       0%   { transform: scale(1, 1); }
       30%  { transform: scale(0.82, 0.65); }
@@ -100,10 +131,10 @@
       100% { transform: scale(1, 1); }
     }
 
-    /* ===== Splash particles ===== */
+    /* ===== Splash ===== */
     .splash-area {
       position: absolute;
-      bottom: 78px;
+      bottom: 76px;
       left: 50%;
       transform: translateX(-50%);
       width: 130px;
@@ -116,8 +147,7 @@
       position: absolute;
       bottom: 0;
       left: 50%;
-      width: 8px;
-      height: 10px;
+      width: 8px; height: 10px;
       border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
       background: linear-gradient(180deg, #81d4fa, #29b6f6);
       opacity: 0;
@@ -149,7 +179,7 @@
     }
     .clog-badge.show { opacity: 1; transform: scale(1); }
 
-    /* ===== Status message ===== */
+    /* ===== Status ===== */
     .status-msg {
       margin-top: 14px;
       font-size: 0.95rem;
@@ -171,7 +201,7 @@
     .plunger-btn {
       display: none;
       cursor: pointer;
-      font-size: 42px;
+      font-size: 38px;
       line-height: 1;
       background: none;
       border: none;
@@ -181,10 +211,15 @@
       animation: plunge-idle 1.4s ease-in-out infinite;
     }
     .plunger-btn:hover { background: rgba(0,0,0,0.05); }
-    .plunger-btn.show { display: inline-block; }
+    .plunger-btn.show { display: inline-flex; align-items: center; gap: 6px; }
     .plunger-btn.working {
       animation: plunge-work 0.5s ease-in-out;
       pointer-events: none;
+    }
+    .plunger-label {
+      font-size: 0.85rem;
+      color: #666;
+      font-family: inherit;
     }
     @keyframes plunge-idle {
       0%, 100% { transform: translateY(0); }
@@ -202,17 +237,17 @@
     /* ===== Stats ===== */
     .stats {
       display: flex;
-      gap: 14px;
-      margin-top: 20px;
+      gap: 12px;
+      margin-top: 16px;
       flex-wrap: wrap;
       justify-content: center;
     }
     .stat-card {
       background: #fff;
       border-radius: 16px;
-      padding: 14px 22px;
+      padding: 12px 18px;
       box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-      min-width: 120px;
+      min-width: 110px;
       flex: 1;
       transition: transform 0.2s, box-shadow 0.2s;
     }
@@ -220,10 +255,10 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 24px rgba(0,0,0,0.10);
     }
-    .stat-icon  { font-size: 24px; margin-bottom: 2px; }
-    .stat-label { font-size: 0.8rem; color: #999; margin-bottom: 2px; white-space: nowrap; }
+    .stat-icon  { font-size: 22px; margin-bottom: 1px; }
+    .stat-label { font-size: 0.78rem; color: #999; margin-bottom: 2px; white-space: nowrap; }
     .stat-value {
-      font-size: 1.8rem;
+      font-size: 1.7rem;
       font-weight: 800;
       color: #2c2c2c;
       font-variant-numeric: tabular-nums;
@@ -231,7 +266,6 @@
     .stat-card:nth-child(1) .stat-value { color: #f9a825; }
     .stat-card:nth-child(2) .stat-value { color: #1e88e5; }
     .stat-card:nth-child(3) .stat-value { color: #e53935; }
-
 
     .stat-value.bump {
       animation: bump 0.25s ease;
@@ -244,247 +278,480 @@
 
     /* ===== Footer ===== */
     .footer {
-      margin-top: 32px;
-      font-size: 0.75rem;
-      color: #bbb;
-      letter-spacing: 0.5px;
+      margin-top: 28px;
+      font-size: 0.7rem;
+      color: #ccc;
+      letter-spacing: 0.3px;
     }
 
     /* ===== Responsive ===== */
     @media (max-width: 480px) {
-      h1 { font-size: 1.7rem; }
-      .subtitle { font-size: 0.85rem; margin-bottom: 16px; }
-      .toilet-svg { width: 160px; height: 240px; }
-      .splash-area { bottom: 56px; width: 100px; height: 80px; }
-      .stat-card { padding: 10px 16px; min-width: 80px; }
-      .stat-value { font-size: 1.4rem; }
-      .stat-icon { font-size: 20px; }
-      .stat-label { font-size: 0.7rem; }
-      .stats { gap: 10px; }
-      .plunger-btn { font-size: 34px; }
+      h1 { font-size: 1.6rem; }
+      .subtitle { font-size: 0.8rem; }
+      .tagline { font-size: 0.72rem; margin-bottom: 14px; }
+      .toilet-svg { width: 150px; height: 230px; }
+      .splash-area { bottom: 55px; width: 100px; height: 80px; }
+      .stat-card { padding: 8px 12px; min-width: 70px; }
+      .stat-value { font-size: 1.3rem; }
+      .stat-icon { font-size: 18px; }
+      .stat-label { font-size: 0.65rem; }
+      .stats { gap: 8px; }
+      .plunger-btn { font-size: 32px; }
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>&#x1F4A9; 赛博厕所</h1>
-  <p class="subtitle">带薪拉屎模拟器 · 点击马桶冲水</p>
+  <!-- Language switcher -->
+  <div class="top-bar">
+    <div class="lang-switch">
+      <span class="lang-opt" data-lang="zh" onclick="window.__toggleLang('zh')">&#x4E2D;</span>
+      <span class="lang-sep">|</span>
+      <span class="lang-opt" data-lang="en" onclick="window.__toggleLang('en')">EN</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <h1 id="title" data-l10n="title">&#x1F4A9; 赛博厕所</h1>
+  <p class="subtitle" id="subtitle" data-l10n="subtitle">带薪拉屎模拟器</p>
+  <p class="tagline" id="tagline" data-l10n="tagline">让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎</p>
 
   <!-- Toilet -->
   <div class="toilet-wrapper" id="toilet">
-    <svg class="toilet-svg" viewBox="0 0 240 350" aria-label="马桶">
-      <!-- Tank body -->
+    <svg class="toilet-svg" viewBox="0 0 240 350" aria-label="Toilet">
       <rect x="55" y="28" width="130" height="102" rx="8" fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
-      <!-- Tank lid -->
       <rect x="48" y="20" width="144" height="18" rx="9" fill="#ffffff" stroke="#d0d0d0" stroke-width="2"/>
-      <!-- Lid highlight -->
       <rect x="54" y="22" width="132" height="4" rx="2" fill="#f4f4f4"/>
-      <!-- Flush handle -->
       <rect x="180" y="56" width="14" height="28" rx="4" fill="#c8c8c8" stroke="#aaa" stroke-width="1.5"/>
       <rect x="182" y="62" width="4" height="16" rx="2" fill="#aaa"/>
-      <!-- Bowl outer body -->
       <path d="M 34 140 Q 12 222 34 278 Q 66 332 120 337 Q 174 332 206 278 Q 228 222 206 140 Z"
             fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
-      <!-- Bowl inner shadow -->
       <path d="M 39 144 Q 20 222 39 272 Q 68 325 120 330 Q 172 325 201 272 Q 220 222 201 144 Z"
             fill="#f6f6f6"/>
-      <!-- Seat outer rim -->
       <ellipse cx="120" cy="158" rx="88" ry="36" fill="#ffffff" stroke="#d0d0d0" stroke-width="2"/>
-      <!-- Seat inner rim -->
       <ellipse cx="120" cy="158" rx="72" ry="26" fill="#f4f4f4" stroke="#d6d6d6" stroke-width="1.5"/>
-      <!-- Bowl interior -->
       <ellipse cx="120" cy="160" rx="68" ry="22" fill="#efefef"/>
-      <!-- Water -->
       <ellipse class="water" cx="120" cy="166" rx="58" ry="17" fill="#4fc3f7"/>
-      <!-- Water highlight -->
       <ellipse class="water-highlight" cx="108" cy="162" rx="28" ry="6" fill="#81d4fa" opacity="0.55"/>
-      <!-- Seat screws -->
       <circle cx="72" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width="0.5"/>
       <circle cx="168" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width="0.5"/>
     </svg>
 
-    <!-- Splash particles container -->
     <div class="splash-area" id="splashArea"></div>
-
-    <!-- Clog badge -->
-    <div class="clog-badge" id="clogBadge">&#x1F9F1; 堵了</div>
+    <div class="clog-badge" id="clogBadge">&#x1F9F1; <span data-l10n="clog_badge">堵了</span></div>
   </div>
 
-  <!-- Status message -->
-  <div class="status-msg" id="statusMsg">&#x1F4A1; 点击马桶冲水</div>
+  <!-- Status -->
+  <div class="status-msg" id="statusMsg" data-l10n="status_default">&#x1F4A1; 点击马桶冲水</div>
 
   <!-- Plunger -->
   <div class="plunger-area">
-    <button class="plunger-btn" id="plungerBtn">&#x1F9F9; 通一下</button>
+    <button class="plunger-btn" id="plungerBtn">
+      <span>&#x1F9F9;</span>
+      <span class="plunger-label" data-l10n="plunger">通一下</span>
+    </button>
   </div>
 
   <!-- Stats -->
   <div class="stats">
     <div class="stat-card">
       <div class="stat-icon">&#x1F4BC;</div>
-      <div class="stat-label">带薪拉屎人数</div>
+      <div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div>
       <div class="stat-value" id="statPeople">0</div>
     </div>
     <div class="stat-card">
       <div class="stat-icon">&#x1F6BF;</div>
-      <div class="stat-label">冲水次数</div>
+      <div class="stat-label" data-l10n="stat_flushes">冲水次数</div>
       <div class="stat-value" id="statFlushes">0</div>
     </div>
     <div class="stat-card">
       <div class="stat-icon">&#x1F527;</div>
-      <div class="stat-label">堵马桶次数</div>
+      <div class="stat-label" data-l10n="stat_clogs">堵马桶次数</div>
       <div class="stat-value" id="statClogs">0</div>
     </div>
   </div>
 
-  <div class="footer">
-    &#x1F680; Hosted on GitHub Pages
-  </div>
+  <div class="footer" data-l10n="footer">&#x1F680; Hosted on GitHub Pages</div>
 </div>
 
 <script>
 (function() {
   'use strict';
 
-  // ===== State =====
-  const state = {
-    people:  Math.floor(Math.random() * 80) + 35,
-    flushes: Math.floor(Math.random() * 180) + 60,
-    clogs:   Math.floor(Math.random() * 12) + 2,
-    isFlushing: false,
-    isClogged:  false,
-    CLOG_RATE:   0.18,
-    UNCLOG_RATE: 0.75,
+  // =====================================================================
+  //  Translations
+  // =====================================================================
+  var L10N = {
+    zh: {
+      title:        '\u{1F4A9} 赛博厕所',
+      subtitle:     '带薪拉屎模拟器',
+      tagline:      '让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
+      status_default:  '\u{1F4A1} 点击马桶冲水',
+      status_flushing: '\u{1F6BF} 冲水中...',
+      status_ok:       '\u{2705} 冲水成功',
+      status_clogged:  '\u{1F4A9} 堵了！快用皮搋子通一通...',
+      status_unclogging: '\u{1F9F9} 正在疏通...',
+      status_unclogged:  '\u{2705} 通了！可以继续冲水了',
+      status_unclog_fail:'\u{1F630} 没通开，再试试...',
+      stat_people:  '带薪拉屎人数',
+      stat_flushes: '冲水次数',
+      stat_clogs:   '堵马桶次数',
+      plunger:      '通一下',
+      clog_badge:   '堵了',
+      footer:       '\u{1F680} Hosted on GitHub Pages',
+    },
+    en: {
+      title:        '\u{1F4A9} Cyber Toilet',
+      subtitle:     'Paid Dump Simulator',
+      tagline:      'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
+      status_default:  '\u{1F4A1} Click the toilet to flush',
+      status_flushing: '\u{1F6BF} Flushing...',
+      status_ok:       '\u{2705} Flush successful',
+      status_clogged:  '\u{1F4A9} Clogged! Use the plunger...',
+      status_unclogging: '\u{1F9F9} Plunging...',
+      status_unclogged:  '\u{2705} Unclogged! Ready to flush',
+      status_unclog_fail:'\u{1F630} Still clogged, try again...',
+      stat_people:  'Paid Poops',
+      stat_flushes: 'Flushes',
+      stat_clogs:   'Clogs',
+      plunger:      'Plunge',
+      clog_badge:   'Clogged',
+      footer:       '\u{1F680} Hosted on GitHub Pages',
+    },
   };
 
-  // ===== DOM refs =====
-  const toilet     = document.getElementById('toilet');
-  const splashArea = document.getElementById('splashArea');
-  const clogBadge  = document.getElementById('clogBadge');
-  const statusMsg  = document.getElementById('statusMsg');
-  const plungerBtn = document.getElementById('plungerBtn');
+  // =====================================================================
+  //  Firebase Config – fill in your own to enable shared realtime stats
+  // =====================================================================
+  var FIREBASE_CONFIG = {
+    apiKey: "",
+    databaseURL: "",
+    projectId: "",
+  };
 
-  const statPeople  = document.getElementById('statPeople');
-  const statFlushes = document.getElementById('statFlushes');
-  const statClogs   = document.getElementById('statClogs');
+  // =====================================================================
+  //  State
+  // =====================================================================
+  var lang = 'zh';
+  var useFirebase = false;
+  var currentStatusKey  = 'status_default';
+  var currentStatusType = ''; // '' | 'flushing' | 'clogged'
 
-  // ===== Display helpers =====
-  function updateStats() {
-    statPeople.textContent  = state.people;
-    statFlushes.textContent = state.flushes;
-    statClogs.textContent   = state.clogs;
+  // Stats from DB (local or Firebase)
+  var serverPeople = 0;
+  var serverFlushes = 0;
+  var serverClogs = 0;
+  var serverClogged = false;
+
+  // Local transient state
+  var isFlushing = false;
+
+  // Firebase ref
+  var db = null;
+
+  // DOM refs
+  var toiletEl       = document.getElementById('toilet');
+  var splashArea     = document.getElementById('splashArea');
+  var clogBadge      = document.getElementById('clogBadge');
+  var statusMsg      = document.getElementById('statusMsg');
+  var plungerBtn     = document.getElementById('plungerBtn');
+  var statPeople     = document.getElementById('statPeople');
+  var statFlushes    = document.getElementById('statFlushes');
+  var statClogs      = document.getElementById('statClogs');
+
+  // =====================================================================
+  //  Language
+  // =====================================================================
+  function t(key) { return (L10N[lang] && L10N[lang][key]) || L10N.zh[key] || key; }
+
+  function applyLanguage() {
+    // Update data-l10n elements
+    var els = document.querySelectorAll('[data-l10n]');
+    for (var i = 0; i < els.length; i++) {
+      var key = els[i].getAttribute('data-l10n');
+      els[i].textContent = t(key);
+    }
+    // Update title separately
+    document.title = t('title');
+    // Language switcher active state
+    var opts = document.querySelectorAll('.lang-opt');
+    for (var j = 0; j < opts.length; j++) {
+      opts[j].classList.toggle('active', opts[j].getAttribute('data-lang') === lang);
+    }
+    // Re-apply status message if set
+    restoreStatus();
   }
 
-  function bump(el) {
+  function restoreStatus() {
+    statusMsg.textContent = t(currentStatusKey);
+    statusMsg.className = 'status-msg' + (currentStatusType ? ' ' + currentStatusType : '');
+  }
+
+  function detectLang() {
+    var stored = localStorage.getItem('ct-lang');
+    if (stored === 'zh' || stored === 'en') return stored;
+    var nav = (navigator.language || navigator.userLanguage || 'zh').toLowerCase();
+    return nav.indexOf('zh') === 0 ? 'zh' : 'en';
+  }
+
+  function toggleLang(to) {
+    if (to === lang) return;
+    lang = to;
+    localStorage.setItem('ct-lang', lang);
+    applyLanguage();
+  }
+  window.__toggleLang = toggleLang;
+
+  // =====================================================================
+  //  Database abstraction
+  // =====================================================================
+  function dbInit() {
+    var ok = FIREBASE_CONFIG.apiKey &&
+             FIREBASE_CONFIG.databaseURL &&
+             FIREBASE_CONFIG.apiKey.indexOf('YOUR') === -1;
+
+    if (ok && window.firebase) {
+      try {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+
+        // Listen for all stats changes
+        db.ref('stats').on('value', function(snap) {
+          var data = snap.val() || {};
+          var changed = false;
+
+          if (typeof data.people   === 'number') { serverPeople = data.people;   changed = true; }
+          if (typeof data.flushes  === 'number') { serverFlushes = data.flushes; changed = true; }
+          if (typeof data.clogs    === 'number') { serverClogs = data.clogs;     changed = true; }
+          if (typeof data.clogged  === 'boolean') { serverClogged = data.clogged; changed = true; }
+
+          // Initialise if empty
+          if (!data.people && !data.flushes) {
+            db.ref('stats').set({ people: 0, flushes: 0, clogs: 0, clogged: false });
+          }
+
+          if (changed) {
+            updateStatsUI();
+            updateCloggedUI();
+            // Unclogged by someone else while we were showing a clogged state
+            if (typeof data.clogged === 'boolean' && !data.clogged &&
+                (currentStatusKey === 'status_clogged' || currentStatusKey === 'status_unclog_fail')) {
+              setStatus('status_default', '');
+            }
+          }
+        });
+
+        useFirebase = true;
+        return;
+      } catch (e) {
+        // fall through to local
+      }
+    }
+
+    // LocalStorage fallback
+    loadLocal();
+  }
+
+  function loadLocal() {
+    try {
+      var saved = localStorage.getItem('ct-stats');
+      if (saved) {
+        var data = JSON.parse(saved);
+        serverPeople  = typeof data.people  === 'number' ? data.people  : 0;
+        serverFlushes = typeof data.flushes === 'number' ? data.flushes : 0;
+        serverClogs   = typeof data.clogs   === 'number' ? data.clogs   : 0;
+        serverClogged = !!data.clogged;
+      }
+    } catch (e) {}
+    updateStatsUI();
+    updateCloggedUI();
+  }
+
+  function saveLocal() {
+    try {
+      localStorage.setItem('ct-stats', JSON.stringify({
+        people: serverPeople,
+        flushes: serverFlushes,
+        clogs: serverClogs,
+        clogged: serverClogged,
+      }));
+    } catch (e) {}
+  }
+
+  // Increment a counter (people or flushes)
+  function dbIncCounter(path) {
+    if (useFirebase) {
+      db.ref('stats/' + path).set(firebase.database.ServerValue.increment(1));
+    } else {
+      if (path === 'people')  { serverPeople++;  }
+      if (path === 'flushes') { serverFlushes++; }
+      updateStatsUI();
+      saveLocal();
+    }
+  }
+
+  // Try to set clogged = true; return true if we won the race
+  function dbTryClog() {
+    if (useFirebase) {
+      var clogRef = db.ref('stats/clogged');
+      clogRef.transaction(function(current) {
+        if (current === true) return; // abort, someone else got there first
+        return true;
+      }, function(error, committed) {
+        if (error) return;
+        if (committed) {
+          // We successfully clogged it – increment the clogs counter
+          db.ref('stats/clogs').set(firebase.database.ServerValue.increment(1));
+        }
+      }, false);
+    } else {
+      if (!serverClogged) {
+        serverClogged = true;
+        serverClogs++;
+        updateStatsUI();
+        updateCloggedUI();
+        saveLocal();
+      }
+    }
+  }
+
+  function dbSetUnclogged() {
+    if (useFirebase) {
+      db.ref('stats/clogged').set(false);
+    } else {
+      serverClogged = false;
+      updateCloggedUI();
+      saveLocal();
+    }
+  }
+
+  // =====================================================================
+  //  UI Updates
+  // =====================================================================
+  function updateStatsUI() {
+    statPeople.textContent  = serverPeople;
+    statFlushes.textContent = serverFlushes;
+    statClogs.textContent   = serverClogs;
+  }
+
+  function bumpStat(el) {
     el.classList.remove('bump');
-    void el.offsetWidth; // force reflow
+    void el.offsetWidth;
     el.classList.add('bump');
   }
 
-  function setStatus(text, className) {
-    statusMsg.textContent = text;
-    statusMsg.className = 'status-msg' + (className ? ' ' + className : '');
+  function setStatus(key, type) {
+    currentStatusKey  = key;
+    currentStatusType = type || '';
+    statusMsg.textContent = t(key);
+    statusMsg.className = 'status-msg' + (type ? ' ' + type : '');
   }
 
-  // ===== Splash particles =====
+  function updateCloggedUI() {
+    if (serverClogged) {
+      toiletEl.classList.add('clogged');
+      clogBadge.classList.add('show');
+      plungerBtn.classList.add('show');
+    } else {
+      toiletEl.classList.remove('clogged');
+      clogBadge.classList.remove('show');
+      plungerBtn.classList.remove('show');
+    }
+  }
+
+  // =====================================================================
+  //  Splash particles
+  // =====================================================================
   function createSplash() {
-    const count = 14 + Math.floor(Math.random() * 8);
-    for (let i = 0; i < count; i++) {
-      const drop = document.createElement('div');
+    var count = 14 + Math.floor(Math.random() * 8);
+    for (var i = 0; i < count; i++) {
+      var drop = document.createElement('div');
       drop.className = 'drop';
-      const angle = -30 + Math.random() * 60;
-      const dist  = 40 + Math.random() * 80;
-      const rad   = angle * Math.PI / 180;
+      var angle = -30 + Math.random() * 60;
+      var dist  = 40 + Math.random() * 80;
+      var rad   = angle * Math.PI / 180;
       drop.style.setProperty('--dx', (Math.sin(rad) * dist) + 'px');
       drop.style.setProperty('--dy', (-Math.cos(rad) * dist - 20) + 'px');
       drop.style.left = (Math.random() * 60 - 30) + 'px';
       drop.style.animationDelay    = (Math.random() * 0.15) + 's';
       drop.style.animationDuration = (0.5 + Math.random() * 0.3) + 's';
       splashArea.appendChild(drop);
-      setTimeout(() => drop.remove(), 1000);
+      setTimeout(function() { drop.remove(); }, 1000);
     }
   }
 
-  // ===== Plunger =====
-  function handlePlunge() {
-    if (plungerBtn.classList.contains('working')) return;
-    plungerBtn.classList.add('working');
-    setStatus('&#x1F9F9; 正在疏通...', 'flushing');
-
-    setTimeout(() => {
-      plungerBtn.classList.remove('working');
-      if (Math.random() < state.UNCLOG_RATE) {
-        state.isClogged = false;
-        toilet.classList.remove('clogged');
-        clogBadge.classList.remove('show');
-        plungerBtn.classList.remove('show');
-        setStatus('&#x2705; 通了！可以继续冲水了');
-        updateStats();
-      } else {
-        setStatus('&#x1F630; 没通开，再试试...', 'clogged');
-      }
-    }, 600);
-  }
-
-  // ===== Flush =====
+  // =====================================================================
+  //  Event handlers
+  // =====================================================================
   function handleFlush() {
-    if (state.isFlushing || state.isClogged) return;
+    if (isFlushing || serverClogged) return;
 
-    state.isFlushing = true;
-    toilet.classList.add('flushing');
-    setStatus('&#x1F6BF; 冲水中...', 'flushing');
+    isFlushing = true;
+    toiletEl.classList.add('flushing');
+    setStatus('status_flushing', 'flushing');
     createSplash();
 
-    setTimeout(() => {
-      toilet.classList.remove('flushing');
-      state.isFlushing = false;
+    // Update server counters
+    dbIncCounter('people');
+    dbIncCounter('flushes');
 
-      // Always increment flush stats
-      state.people  += 1;
-      state.flushes += 1;
-      updateStats();
-      bump(statPeople);
-      bump(statFlushes);
+    setTimeout(function() {
+      toiletEl.classList.remove('flushing');
+      isFlushing = false;
 
-      // Random clog check
-      if (Math.random() < state.CLOG_RATE) {
-        state.clogs += 1;
-        state.isClogged = true;
-        toilet.classList.add('clogged');
-        clogBadge.classList.add('show');
-        plungerBtn.classList.add('show');
-        updateStats();
-        bump(statClogs);
-        setStatus('&#x1F4A9; 堵了！快用皮搋子通一通...', 'clogged');
+      if (Math.random() < 0.18) {
+        dbTryClog();
+        setStatus('status_clogged', 'clogged');
       } else {
-        setStatus('&#x2705; 冲水成功');
+        setStatus('status_ok', '');
       }
     }, 650);
   }
 
-  // ===== Plumbing =====
-  // Keyboard shortcuts
+  function handlePlunge() {
+    if (plungerBtn.classList.contains('working')) return;
+    plungerBtn.classList.add('working');
+    setStatus('status_unclogging', 'flushing');
+
+    setTimeout(function() {
+      plungerBtn.classList.remove('working');
+      if (Math.random() < 0.75) {
+        dbSetUnclogged();
+        setStatus('status_unclogged', '');
+      } else {
+        setStatus('status_unclog_fail', 'clogged');
+      }
+    }, 600);
+  }
+
+  // =====================================================================
+  //  Init
+  // =====================================================================
+  // Language
+  lang = detectLang();
+  applyLanguage();
+
+  // Database
+  dbInit();
+
+  // Events
+  toiletEl.addEventListener('click', handleFlush);
+  plungerBtn.addEventListener('click', handlePlunge);
+
   document.addEventListener('keydown', function(e) {
     if (e.key === ' ' || e.key === 'Enter') {
-      if (state.isClogged) { handlePlunge(); }
-      else                 { handleFlush(); }
+      if (serverClogged) { handlePlunge(); }
+      else               { handleFlush(); }
       e.preventDefault();
     }
   });
 
-  // Click / tap events
-  toilet.addEventListener('click', handleFlush);
-  plungerBtn.addEventListener('click', handlePlunge);
+  // Set initial status
+  if (!serverClogged) {
+    setStatus('status_default', '');
+  }
 
-  // Touch device: prevent double-tap zoom on the toilet
-  toilet.addEventListener('touchstart', function(e) {
-    // Let the click event handle the logic; just prevent potential zoom
-  }, { passive: true });
-
-  // ===== Init =====
-  updateStats();
-  setStatus('&#x1F4A1; 点击马桶冲水');
 })();
 </script>
 </body>
