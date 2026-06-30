@@ -258,7 +258,8 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
     </div>
 
     <!-- Stats -->
-    <p class="stats-prefix"><span data-l10n="stats_prefix">在你之前已有：</span><button class="stats-toggle" id="statsToggle" onmousedown="__startPersonalView()" onmouseup="__endPersonalView()" onmouseleave="__endPersonalView()" ontouchstart="__startPersonalView()" ontouchend="__endPersonalView()" onclick="__toggleStatsView()" data-l10n="stats_global">全员</button></p>
+    <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
+    <p><button class="stats-toggle" id="statsToggle" onmousedown="__startPersonalView()" onmouseup="__endPersonalView()" onmouseleave="__endPersonalView()" ontouchstart="__startPersonalView()" ontouchend="__endPersonalView()">全员</button></p>
     <div class="stats">
       <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div><div class="stat-value" id="statPeople">0</div></div>
       <div class="stat-card"><div class="stat-icon">🚿</div><div class="stat-label" data-l10n="stat_flushes">冲水次数</div><div class="stat-value" id="statFlushes">0</div></div>
@@ -433,13 +434,21 @@ checkGiftNotifications()
 }
 
 // ===== Stats View Toggle =====
-var statsPersonal=false,statsLongPress=false;
-function __toggleStatsView(){
-statsPersonal=!statsPersonal;statsLongPress=false;
+var statsPersonal=false,statsPressTimer=null;
+function __startPersonalView(){
+if(!myUserId)return;
+statsPressTimer=setTimeout(function(){statsPersonal=true;applyStatsView()},400)
+}
+function __endPersonalView(){
+if(statsPressTimer){clearTimeout(statsPressTimer);statsPressTimer=null;
+// Short click → toggle
+statsPersonal=!statsPersonal;
+}else{
+// Long press release → back to global
+statsPersonal=false;
+}
 applyStatsView()
 }
-function __startPersonalView(){if(!myUserId)return;statsLongPress=true;statsPersonal=true;applyStatsView()}
-function __endPersonalView(){if(!statsLongPress)return;statsLongPress=false;statsPersonal=false;applyStatsView()}
 function applyStatsView(){
 var btn=$('statsToggle');btn.classList.toggle('personal',statsPersonal);
 btn.textContent=statsPersonal?t('stats_personal'):t('stats_global');
@@ -480,7 +489,7 @@ serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serve
 serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
 usersData=s.users||{};userList=s.userList||[];poopGifts=s.poopGifts||{};
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();
-}).catch(function(e){console.warn('Gist sync:',e);setStatus('status_sync_err','clogged')})
+}).catch(function(e){console.warn('Gist sync:',e)})
 }
 
 function getMyUserData(){
