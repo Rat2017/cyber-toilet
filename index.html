@@ -572,8 +572,8 @@ isFull=serverPoopVolume>=CAPACITY
 function bumpStat(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
 function setStatus(key,type){currentStatusKey=key;currentStatusType=type||'';statusMsg.textContent=t(key);statusMsg.className='status-msg'+(type?' '+type:'')}
 function updateCloggedUI(){
-if(serverClogged){toiletEl.classList.add('clogged');flushBtn.innerHTML='<span>🧱</span><span class="action-label">堵了</span>';flushBtn.onclick=handleFlush;plungerBtn.style.display=''}
-else{toiletEl.classList.remove('clogged');flushBtn.innerHTML='<span>🚿</span><span class="action-label" data-l10n="flush_btn">冲水</span>';flushBtn.onclick=handleFlush;plungerBtn.style.display='none'}
+if(serverClogged){toiletEl.classList.add('clogged');setStatus('status_clogged','clogged');plungerBtn.style.display=''}
+else{toiletEl.classList.remove('clogged');if(currentStatusKey==='status_clogged')setStatus('status_default','');plungerBtn.style.display='none'}
 }
 
 // ===== Splash =====
