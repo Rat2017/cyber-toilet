@@ -348,7 +348,7 @@ footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 排行榜',lb_collapse:'收起',lb_loading:'加载中...',lb_empty:'暂无数据',
 hint_flush:'🚿 冲水',hint_poop:'💩 拉屎',
 sw_title:'📝 签名墙',sw_collapse:'收起',
-lb_tab_flushes:'🚿冲水',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
+lb_tab_flushes:'🚿冲水',lb_tab_clogs:'🔧堵',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
 },
 en:{
 title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
@@ -373,7 +373,7 @@ footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 Leaderboard',lb_collapse:'Collapse',lb_loading:'Loading...',lb_empty:'No data',
 hint_flush:'🚿 Flush',hint_poop:'💩 Poop',
 sw_title:'📝 Signatures',sw_collapse:'Collapse',
-lb_tab_flushes:'🚿Flush',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
+lb_tab_flushes:'🚿Flush',lb_tab_clogs:'🔧Clog',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
 }
 };
 
@@ -385,7 +385,7 @@ var CAPACITY=15,isFlushing=false,isPooping=false,isFull=false,canLookBack=false;
 var myUserId='';
 var usersData={},userList=[],poopGifts={};
 var lbCategory='flushes';
-var lbCategories=['flushes','goldenPython','strawberryTower','lookBacks','overflowCount','giftSentCount','giftRecvCount'];
+var lbCategories=['flushes','clogs','goldenPython','strawberryTower','lookBacks','overflowCount','giftSentCount','giftRecvCount'];
 
 // DOM refs
 function $(id){return document.getElementById(id)}
@@ -485,7 +485,7 @@ updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();
 
 function getMyUserData(){
 if(!myUserId)return null;
-if(!usersData[myUserId])usersData[myUserId]={flushes:0,goldenPython:0,strawberryTower:0,lookBacks:0,overflowCount:0,giftSentCount:0,giftSentVol:0,giftRecvCount:0,giftRecvVol:0};
+if(!usersData[myUserId])usersData[myUserId]={flushes:0,goldenPython:0,strawberryTower:0,lookBacks:0,overflowCount:0,clogs:0,giftSentCount:0,giftSentVol:0,giftRecvCount:0,giftRecvVol:0};
 return usersData[myUserId]
 }
 
@@ -645,7 +645,7 @@ if(myUserId){
 var d=getMyUserData();if(d){d.flushes=(d.flushes||0)+1}
 }
 // Clog check
-if(Math.random()<0.18){serverClogged=true;serverClogs++;updateCloggedUI();updateStatsUI();bumpStat(statClogs)}
+if(Math.random()<0.18){serverClogged=true;serverClogs++;updateCloggedUI();updateStatsUI();bumpStat(statClogs);if(myUserId){var d2=getMyUserData();if(d2)d2.clogs=(d2.clogs||0)+1}}
 syncToGist()
 },550)
 }
@@ -685,7 +685,7 @@ syncToGist()
 // ===== Leaderboard =====
 function renderLBTabs(){
 lbTabs.innerHTML='';
-var keys=lbCategories,labels=['lb_tab_flushes','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows','lb_tab_gift_sent','lb_tab_gift_recv'];
+var keys=lbCategories,labels=['lb_tab_flushes','lb_tab_clogs','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows','lb_tab_gift_sent','lb_tab_gift_recv'];
 keys.forEach(function(k,i){
 var btn=document.createElement('button');btn.className='lb-tab'+(k===lbCategory?' active':'');btn.textContent=t(labels[i]);
 btn.onclick=function(){lbCategory=k;renderLBTabs();renderLBList()};
@@ -699,6 +699,7 @@ Object.keys(usersData).forEach(function(id){
 var d=usersData[id];if(!d)return;
 var val=0;
 if(lbCategory==='flushes')val=d.flushes||0;
+else if(lbCategory==='clogs')val=d.clogs||0;
 else if(lbCategory==='goldenPython')val=d.goldenPython||0;
 else if(lbCategory==='strawberryTower')val=d.strawberryTower||0;
 else if(lbCategory==='lookBacks')val=d.lookBacks||0;
