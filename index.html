@@ -340,7 +340,7 @@ gift_title:'📦 搬屎',gift_desc:'选择要搬给谁',gift_send:'📦 搬走',
 footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 排行榜',lb_collapse:'收起',lb_expand:'展开',lb_loading:'加载中...',lb_empty:'暂无数据',
 sw_title:'📝 签名墙',sw_collapse:'收起',
-lb_tab_flushes:'🚿冲水',lb_tab_clogs:'🔧堵',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
+lb_tab_flushes:'🚿冲水',lb_tab_clogs:'🔧堵',lb_tab_poop_vol:'💩拉屎量',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
 },
 en:{
 title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
@@ -364,7 +364,7 @@ gift_title:'📦 Gift Poop',gift_desc:'Choose a recipient',gift_send:'📦 Send'
 footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 Leaderboard',lb_collapse:'Collapse',lb_expand:'Expand',lb_loading:'Loading...',lb_empty:'No data',
 sw_title:'📝 Signatures',sw_collapse:'Collapse',
-lb_tab_flushes:'🚿Flush',lb_tab_clogs:'🔧Clog',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
+lb_tab_flushes:'🚿Flush',lb_tab_clogs:'🔧Clog',lb_tab_poop_vol:'💩PoopVol',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
 }
 };
 
@@ -376,7 +376,7 @@ var CAPACITY=15,isFlushing=false,isPooping=false,isFull=false,canLookBack=false;
 var myUserId='';
 var usersData={},userList=[],poopGifts={};
 var lbCategory='flushes';
-var lbCategories=['flushes','clogs','goldenPython','strawberryTower','lookBacks','overflowCount','giftSentCount','giftRecvCount'];
+var lbCategories=['flushes','clogs','totalPoopVol','goldenPython','strawberryTower','lookBacks','overflowCount','giftSentCount','giftRecvCount'];
 
 // DOM refs
 function $(id){return document.getElementById(id)}
@@ -607,6 +607,7 @@ setTimeout(function(){
 toiletEl.classList.remove('pooping');isPooping=false;
 var poop=parseFloat((Math.random()*2.9+0.1).toFixed(1));
 serverPoopVolume=Math.min(serverPoopVolume+poop,CAPACITY);
+if(myUserId){var pd=getMyUserData();if(pd){pd.totalPoopVol=(pd.totalPoopVol||0)+poop;renderLBList()}}
 updatePoopUI();
 statusMsg.textContent=t('status_poop').replace('{poop}',poop.toFixed(1)).replace('{total}',serverPoopVolume.toFixed(1));
 statusMsg.className='status-msg';
@@ -690,7 +691,7 @@ syncToGist()
 // ===== Leaderboard =====
 function renderLBTabs(){
 lbTabs.innerHTML='';
-var keys=lbCategories,labels=['lb_tab_flushes','lb_tab_clogs','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows','lb_tab_gift_sent','lb_tab_gift_recv'];
+var keys=lbCategories,labels=['lb_tab_flushes','lb_tab_clogs','lb_tab_poop_vol','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows','lb_tab_gift_sent','lb_tab_gift_recv'];
 keys.forEach(function(k,i){
 var btn=document.createElement('button');btn.className='lb-tab'+(k===lbCategory?' active':'');btn.textContent=t(labels[i]);
 btn.onclick=function(){lbCategory=k;renderLBTabs();renderLBList()};
@@ -706,6 +707,7 @@ var val=0;
 if(!d){entries.push({id:id,val:0});return}
 if(lbCategory==='flushes')val=d.flushes||0;
 else if(lbCategory==='clogs')val=d.clogs||0;
+else if(lbCategory==='totalPoopVol')val=d.totalPoopVol||0;
 else if(lbCategory==='goldenPython')val=d.goldenPython||0;
 else if(lbCategory==='strawberryTower')val=d.strawberryTower||0;
 else if(lbCategory==='lookBacks')val=d.lookBacks||0;
@@ -720,7 +722,8 @@ entries.slice(0,15).forEach(function(e,i){
 var div=document.createElement('div');div.className='lb-item';if(e.id===myUserId)div.style.background='rgba(33,150,243,0.08)';
 var rank=document.createElement('span');rank.className='rank';rank.textContent=i+1;div.appendChild(rank);
 var name=document.createElement('span');name.className='name';name.textContent=e.id;div.appendChild(name);
-var val=document.createElement('span');val.className='val';val.textContent=e.val;div.appendChild(val);
+var displayVal=e.val;if(lbCategory==='totalPoopVol'&&typeof displayVal==='number')displayVal=displayVal.toFixed(1);
+var val=document.createElement('span');val.className='val';val.textContent=displayVal;div.appendChild(val);
 lbList.appendChild(div)
 })
 }
