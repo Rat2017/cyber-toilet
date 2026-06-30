@@ -293,6 +293,7 @@
     .stat-card:nth-child(3) .stat-value { color: #e53935; }
     .stat-card:nth-child(4) .stat-value { color: #7b1fa2; }
     .stat-card:nth-child(5) .stat-value { color: #00897b; }
+    .stat-card:nth-child(6) .stat-value { color: #6d4c41; }
 
     .stat-value.bump {
       animation: bump 0.25s ease;
@@ -301,6 +302,32 @@
       0%   { transform: scale(1); }
       50%  { transform: scale(1.25); }
       100% { transform: scale(1); }
+    }
+
+    /* ===== Lookback ===== */
+    .lookback-area {
+      margin-top: 6px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lookback-btn {
+      cursor: pointer;
+      font-size: 34px;
+      line-height: 1;
+      background: none;
+      border: none;
+      padding: 6px 20px;
+      border-radius: 30px;
+      transition: background 0.2s;
+    }
+    .lookback-btn:hover { background: rgba(0,0,0,0.05); }
+    .lookback-btn:active { transform: scale(0.95); }
+    .lookback-label {
+      font-size: 0.85rem;
+      color: #666;
+      font-family: inherit;
     }
 
     /* ===== Footer ===== */
@@ -323,7 +350,8 @@
       .stat-icon { font-size: 18px; }
       .stat-label { font-size: 0.65rem; }
       .stats { gap: 8px; }
-      .plunger-btn { font-size: 32px; }
+      .plunger-btn, .lookback-btn { font-size: 30px; }
+      .lookback-btn { padding: 4px 14px; }
       .stats-prefix { font-size: 0.72rem; margin: 14px 0 4px; }
     }
   </style>
@@ -382,6 +410,14 @@
     </button>
   </div>
 
+  <!-- Lookback -->
+  <div class="lookback-area">
+    <button class="lookback-btn" id="lookbackBtn">
+      <span>&#x1F440;</span>
+      <span class="lookback-label" data-l10n="lookback">回头看一眼</span>
+    </button>
+  </div>
+
   <!-- Stats -->
   <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
   <p class="capacity-line" id="capacityLine">&#x1F4A9; 0L / 15L</p>
@@ -410,6 +446,11 @@
       <div class="stat-icon">&#x1F4A7;</div>
       <div class="stat-label" data-l10n="stat_overflow_vol">漾出体积</div>
       <div class="stat-value" id="statOverflowVol">0L</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">&#x1F440;</div>
+      <div class="stat-label" data-l10n="stat_lookbacks">回头看一眼</div>
+      <div class="stat-value" id="statLookbacks">0</div>
     </div>
   </div>
 
@@ -445,8 +486,14 @@
       stat_overflow_count: '漾出次数',
       stat_overflow_vol: '漾出体积(L)',
       capacity_line: '\u{1F4A9} {cur}L / 15L',
+      status_lookback: '\u{1F440} 回头看了一眼...',
       status_poop:   '拉了 {poop}L \u{1F4A9}',
       status_overflow: '\u{1F4A6} 漾出 +{overflow}L水！拉了 {poop}L \u{1F4A9}',
+      lookback:      '回头看一眼',
+      lb_normal:     '\u{1F914} 平平无奇，Nothing special.',
+      lb_golden:     '\u{1F40D} 黄金巨蟒！金光闪闪，堪称艺术品！',
+      lb_strawberry: '\u{1F353} 草...草莓塔？？？你陷入了沉思...',
+      stat_lookbacks: '回头看一眼次数',
       plunger:      '通一下',
       clog_badge:   '堵了',
       footer:       '\u{1F680} Hosted on GitHub Pages',
@@ -472,8 +519,14 @@
       stat_overflow_count: 'Overflows',
       stat_overflow_vol: 'Overflow (L)',
       capacity_line: '\u{1F4A9} {cur}L / 15L',
+      status_lookback: '\u{1F440} Looked back...',
       status_poop:   'Pooped {poop}L \u{1F4A9}',
       status_overflow: '\u{1F4A6} Overflow +{overflow}L! Pooped {poop}L \u{1F4A9}',
+      lookback:      'Look Back',
+      lb_normal:     '\u{1F914} Just a regular poop, nothing special.',
+      lb_golden:     '\u{1F40D} Golden Python! A masterpiece shines before you!',
+      lb_strawberry: '\u{1F353} A... Strawberry Tower??? You are deep in thought...',
+      stat_lookbacks: 'Look Backs',
       plunger:      'Plunge',
       clog_badge:   'Clogged',
       footer:       '\u{1F680} Hosted on GitHub Pages',
@@ -495,6 +548,7 @@
   var serverPoopVolume = 0;
   var serverOverflowCount = 0;
   var serverOverflowVolume = 0;
+  var serverLookBacks = 0;
   var CAPACITY = 15;
 
   // Local transient state
@@ -512,6 +566,8 @@
   var statClogs      = document.getElementById('statClogs');
   var statOverflowCount = document.getElementById('statOverflowCount');
   var statOverflowVol   = document.getElementById('statOverflowVol');
+  var statLookbacks     = document.getElementById('statLookbacks');
+  var lookbackBtn       = document.getElementById('lookbackBtn');
 
   // =====================================================================
   //  Language
@@ -579,6 +635,7 @@
       serverPoopVolume    = typeof stats.poopVolume    === 'number' ? stats.poopVolume : 0;
       serverOverflowCount = typeof stats.overflowCount === 'number' ? stats.overflowCount : 0;
       serverOverflowVolume= typeof stats.overflowVolume=== 'number' ? stats.overflowVolume : 0;
+      serverLookBacks = typeof stats.lookBacks === 'number' ? stats.lookBacks : 0;
       updateStatsUI();
       updateCloggedUI();
       if (!serverClogged &&
@@ -606,6 +663,7 @@
           poopVolume: serverPoopVolume,
           overflowCount: serverOverflowCount,
           overflowVolume: serverOverflowVolume,
+          lookBacks: serverLookBacks,
         })}}
       })
     })
@@ -623,6 +681,7 @@
       serverPoopVolume    = typeof s.poopVolume    === 'number' ? s.poopVolume : 0;
       serverOverflowCount = typeof s.overflowCount === 'number' ? s.overflowCount : 0;
       serverOverflowVolume= typeof s.overflowVolume=== 'number' ? s.overflowVolume : 0;
+      serverLookBacks = typeof s.lookBacks === 'number' ? s.lookBacks : 0;
       updateStatsUI();
       updateCloggedUI();
     })
@@ -652,7 +711,7 @@
     statClogs.textContent   = serverClogs;
     statOverflowCount.textContent = serverOverflowCount;
     statOverflowVol.textContent   = serverOverflowVolume + 'L';
-    // Capacity display
+    statLookbacks.textContent     = serverLookBacks;
     capacityLine.textContent = '\u{1F4A9} ' + Math.min(serverPoopVolume, CAPACITY).toFixed(1) + 'L / ' + CAPACITY + 'L';
   }
 
@@ -729,15 +788,16 @@
         serverOverflowVolume += 2;
         bumpStat(statOverflowCount);
         bumpStat(statOverflowVol);
-        // Dynamic overflow message
+        // Clogged: poop stays, water overflows
         statusMsg.textContent = t('status_overflow')
           .replace('{poop}', poop.toFixed(1))
           .replace('{overflow}', '2');
         statusMsg.className = 'status-msg clogged';
       } else {
-        // Dynamic poop message
+        // Normal: show what was produced, then cleared
         statusMsg.textContent = t('status_poop').replace('{poop}', poop.toFixed(1));
         statusMsg.className = 'status-msg';
+        serverPoopVolume = 0; // Flush clears everything
       }
 
       updateStatsUI();
@@ -776,6 +836,32 @@
   }
 
   // =====================================================================
+  //  Lookback
+  // =====================================================================
+  function handleLookBack() {
+    var roll = Math.random() * 100;
+    var resultKey;
+    if (roll < 90) {
+      resultKey = 'lb_normal';
+    } else if (roll < 98) {
+      resultKey = 'lb_golden';
+    } else {
+      resultKey = 'lb_strawberry';
+    }
+    serverLookBacks++;
+    updateStatsUI();
+    bumpStat(statLookbacks);
+    setStatus('status_lookback', 'flushing');
+
+    setTimeout(function() {
+      statusMsg.textContent = t(resultKey);
+      statusMsg.className = 'status-msg';
+    }, 400);
+
+    syncToGist();
+  }
+
+  // =====================================================================
   //  Init
   // =====================================================================
   // Language
@@ -788,6 +874,7 @@
   // Events
   toiletEl.addEventListener('click', handleFlush);
   plungerBtn.addEventListener('click', handlePlunge);
+  lookbackBtn.addEventListener('click', handleLookBack);
 
   document.addEventListener('keydown', function(e) {
     if (e.key === ' ' || e.key === 'Enter') {
