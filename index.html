@@ -537,8 +537,8 @@ function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTim
 function updateStatsUI(){
 var d=statsPersonal?getMyUserData():null;
 if(d){
-statPeople.textContent=d.flushes||0;
-statFlushes.textContent=d.goldenPython||0;
+statPeople.textContent=visitorCount;
+statFlushes.textContent=d.flushes||0;
 statClogs.textContent=d.clogs||0;
 statOverflowCount.textContent=d.overflowCount||0;
 statGiftSent.textContent=d.giftSentCount||0;
