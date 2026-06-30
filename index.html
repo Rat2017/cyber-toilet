@@ -333,7 +333,7 @@ id_title:'👤 输入ID',id_desc:'输入你的ID加载个人数据',id_btn:'确�
 stat_my_flushes:'我的拉屎',stat_my_golden:'🌟黄金巨蟒',stat_my_lookbacks:'👀回头',
 sync_btn:'🔄 同步',
 status_default:'💡 点击马桶拉屎，点击水箱冲水',status_flushing:'🚿 冲水中...',
-status_flush_ok:'✅ 冲水成功',status_clogged:'💩 堵了',status_full:'💩 已经被您拉满了！',
+status_flush_ok:'冲水成功',status_clogged:'💩 堵了',status_full:'💩 已经被您拉满了！',
 status_pooping:'💩 拉了一坨...',
 status_poop:'拉了 {poop}L 💩，共 {total}L',
 status_overflow:'💦 漾出 +2L水！',
@@ -358,12 +358,12 @@ id_title:'👤 Enter ID',id_desc:'Enter your ID to load your data',id_btn:'Confi
 stat_my_flushes:'My Poops',stat_my_golden:'🌟Golden',stat_my_lookbacks:'👀Look',
 sync_btn:'🔄 Sync',
 status_default:'💡 Click bowl to poop, click tank to flush',
-status_flushing:'🚿 Flushing...',status_flush_ok:'✅ Flush successful',
+status_flushing:'🚿 Flushing...',status_flush_ok:' Flush successful',
 status_clogged:'💩 Clogged',status_full:'💩 Full! 15L max!',
 status_pooping:'💩 Pooping...',
 status_poop:'Pooped {poop}L 💩, total {total}L',
 status_overflow:'💦 Overflow +2L!',
-status_unclogging:'🧹 Plunging...',status_unclogged:'✅ Unclogged!',status_unclog_fail:'😰 Try again...',
+status_unclogging:'🧹 Plunging...',status_unclogged:'Unclogged!',status_unclog_fail:'😰 Try again...',
 lb_normal:'🤷 Regular poop',lb_golden:'🐍 Golden Python!',lb_strawberry:'🍓 Strawberry Tower!!!',
 flushes:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
 stat_overflow_count:'Overflows',stat_gift_sent:'Sent',stat_gift_recv:'Received',stat_lookbacks:'Look Backs',
@@ -380,7 +380,7 @@ lb_tab_flushes:'🚿Flush',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Str
 // ===== State =====
 var lang='zh',currentStatusKey='status_default',currentStatusType='';
 var serverPeople=0,serverFlushes=0,serverClogs=0,serverClogged=false;
-var serverPoopVolume=0,serverOverflowCount=0,serverOverflowVolume=0,serverLookBacks=0;
+var serverPoopVolume=0,serverOverflowCount=0,serverOverflowVolume=0,serverLookBacks=0,visitorCount=0;
 var CAPACITY=15,isFlushing=false,isPooping=false,isFull=false,canLookBack=false;
 var myUserId='';
 var usersData={},userList=[],poopGifts={};
@@ -428,9 +428,7 @@ $('idModal').classList.add('show');var inp=$('idModalInput');inp.value=myUserId|
 function __hideIdModal(){$('idModal').classList.remove('show')}
 function __confirmId(){
 var inp=$('idModalInput');var id=inp.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
-var isNew=myUserId!==id||userList.indexOf(id)===-1;
 saveUser(id);__hideIdModal();
-if(isNew){if(userList.indexOf(id)===-1){userList.push(id);userList.sort()}syncToGist();renderSW();renderLB()}
 checkGiftNotifications()
 }
 
@@ -461,7 +459,7 @@ var raw;try{raw=JSON.parse(data.files['stats.json'].content)}catch(e){return}
 if(typeof raw.people==='number'&&raw.global===undefined)raw={global:raw,users:{},userList:[],poopGifts:{}};
 var g=raw.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
-serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
+serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
 usersData=raw.users||{};userList=raw.userList||[];poopGifts=raw.poopGifts||{};
 if(myUserId&&userList.indexOf(myUserId)===-1){userList.push(myUserId);userList.sort()}
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();checkGiftNotifications();
@@ -473,14 +471,14 @@ function syncToGist(){
 return fetch(GIST_API,{method:'PATCH',headers:{Authorization:'token '+GIST_TOKEN,'Content-Type':'application/json'},
 body:JSON.stringify({files:{'stats.json':{content:JSON.stringify({
 global:{people:serverPeople,flushes:serverFlushes,clogs:serverClogs,clogged:serverClogged,
-poopVolume:serverPoopVolume,overflowCount:serverOverflowCount,overflowVolume:serverOverflowVolume,lookBacks:serverLookBacks},
+poopVolume:serverPoopVolume,overflowCount:serverOverflowCount,overflowVolume:serverOverflowVolume,lookBacks:serverLookBacks,visitorCount:visitorCount},
 users:usersData,userList:userList,poopGifts:poopGifts})}}})})
 .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
 .then(function(data){
 var s;try{s=JSON.parse(data.files['stats.json'].content)}catch(e){throw new Error('parse')}
 var g=s.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
-serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
+serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
 usersData=s.users||{};userList=s.userList||[];poopGifts=s.poopGifts||{};
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();
 }).catch(function(e){console.warn('Gist sync:',e);setStatus('status_sync_err','clogged')})
@@ -528,7 +526,7 @@ if(userList.indexOf(target)===-1){userList.push(target);userList.sort()}
 var d=getMyUserData();if(d){d.giftSentCount=(d.giftSentCount||0)+1;d.giftSentVol=(d.giftSentVol||0)+vol}
 serverPoopVolume=0;updatePoopUI();updateStatsUI();renderLB();renderSW();__hideGiftModal();
 syncToGist();
-showToast((lang==='zh'?'✅ 搬了 '+vol.toFixed(1)+'L 给 '+target:'✅ Sent '+vol.toFixed(1)+'L to '+target));
+showToast((lang==='zh'?'搬了 '+vol.toFixed(1)+'L 给 '+target:'Sent '+vol.toFixed(1)+'L to '+target));
 }
 function __showGiftModal(){
 if(serverPoopVolume<=0&&!isFull){showToast(lang==='zh'?'先拉屎再搬':'Poop first!');return}
@@ -559,7 +557,7 @@ document.querySelectorAll('.stat-card .stat-label')[0].textContent=t('stat_my_fl
 document.querySelectorAll('.stat-card .stat-label')[2].textContent=t('stat_my_golden');
 document.querySelectorAll('.stat-card .stat-label')[4].textContent=t('stat_my_lookbacks');
 }else{
-statPeople.textContent=userList.length;statFlushes.textContent=serverFlushes;statClogs.textContent=serverClogs;
+statPeople.textContent=visitorCount;statFlushes.textContent=serverFlushes;statClogs.textContent=serverClogs;
 statOverflowCount.textContent=serverOverflowCount;statLookbacks.textContent=serverLookBacks;
 var g=getMyUserData();
 statGiftSent.textContent=g?(g.giftSentCount||0):0;
@@ -746,6 +744,9 @@ sigInput.value='';renderSW()
 
 // ===== Init =====
 lang=detectLang();applyLanguage();loadUser();updateIdBtn();fetchStats();
+
+// Count unique visitors
+if(!localStorage.getItem('ct-visitor')){localStorage.setItem('ct-visitor','1');visitorCount++;syncToGist()}
 
 // Event wiring
 poopHit.addEventListener('click',handlePoop);
