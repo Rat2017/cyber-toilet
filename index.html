@@ -125,9 +125,13 @@ h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bott
 @keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
 
 /* Stats toggle */
-.stats-toggle{cursor:pointer;background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:2px 12px;font-size:.72rem;font-family:inherit;color:#999;transition:all .2s;margin-left:6px}
-.stats-toggle:active{transform:scale(.93)}
-.stats-toggle.personal{background:#1e88e5;color:#fff}
+/* Switch */
+.switch-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 2px}
+.switch-track{width:36px;height:20px;border-radius:12px;background:#ddd;cursor:pointer;position:relative;transition:background .3s;flex-shrink:0}
+.switch-track.on{background:#1e88e5}
+.switch-knob{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.switch-track.on .switch-knob{transform:translateX(16px)}
+.switch-label{font-size:.82rem;color:#999;cursor:pointer;user-select:none}
 
 /* Footer */
 .footer{margin-top:24px;font-size:.7rem;color:#ccc;letter-spacing:.3px}
@@ -258,8 +262,10 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
     </div>
 
     <!-- Stats -->
-    <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
-    <p><button class="stats-toggle" id="statsToggle" onmousedown="__startPersonalView()" onmouseup="__endPersonalView()" onmouseleave="__endPersonalView()" ontouchstart="__startPersonalView()" ontouchend="__endPersonalView()">全员</button></p>
+    <div class="switch-row">
+      <div class="switch-track" id="statsToggle" onclick="__toggleStatsView()"><div class="switch-knob"></div></div>
+      <span class="switch-label" id="statsLabel" data-l10n="stats_prefix">在你之前已有：</span>
+    </div>
     <div class="stats">
       <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div><div class="stat-value" id="statPeople">0</div></div>
       <div class="stat-card"><div class="stat-icon">🚿</div><div class="stat-label" data-l10n="stat_flushes">冲水次数</div><div class="stat-value" id="statFlushes">0</div></div>
@@ -329,7 +335,7 @@ var L10N={
 zh:{
 title:'💩 赛博厕所',subtitle:'带薪拉屎模拟器',
 tagline:'让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
-stats_prefix:'在你之前已有：',stats_global:'全员',stats_personal:'个人',
+stats_prefix:'在你之前已有：',stats_personal_label:'看看我干的好事：',
 id_title:'👤 输入ID',id_desc:'输入你的ID加载个人数据',id_btn:'确认',
 stat_my_flushes:'我的拉屎',stat_my_golden:'🌟黄金巨蟒',stat_my_lookbacks:'👀回头',
 sync_btn:'🔄 同步',
@@ -354,7 +360,7 @@ lb_tab_flushes:'🚿冲水',lb_tab_clogs:'🔧堵',lb_tab_golden:'🐍黄金',lb
 en:{
 title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
 tagline:'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
-stats_prefix:'Before you:',stats_global:'Global',stats_personal:'Mine',
+stats_prefix:'Before you:',stats_personal_label:'Look what I did:',
 id_title:'👤 Enter ID',id_desc:'Enter your ID to load your data',id_btn:'Confirm',
 stat_my_flushes:'My Poops',stat_my_golden:'🌟Golden',stat_my_lookbacks:'👀Look',
 sync_btn:'🔄 Sync',
@@ -408,7 +414,7 @@ function applyLanguage(){
 document.querySelectorAll('[data-l10n]').forEach(function(el){var k=el.getAttribute('data-l10n');el.textContent=t(k)});
 document.title=t('title');
 document.querySelectorAll('.lang-opt').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-lang')===lang)});
-restoreStatus();renderLB();renderSW()
+restoreStatus();renderLB();renderSW();applyStatsView()
 }
 function restoreStatus(){statusMsg.textContent=t(currentStatusKey);statusMsg.className='status-msg'+(currentStatusType?' '+currentStatusType:'')}
 function detectLang(){var s=localStorage.getItem('ct-lang');if(s==='zh'||s==='en')return s;return(navigator.language||navigator.userLanguage||'zh').toLowerCase().indexOf('zh')===0?'zh':'en'}
@@ -434,24 +440,14 @@ checkGiftNotifications()
 }
 
 // ===== Stats View Toggle =====
-var statsPersonal=false,statsPressTimer=null;
-function __startPersonalView(){
-if(!myUserId)return;
-statsPressTimer=setTimeout(function(){statsPersonal=true;applyStatsView()},400)
-}
-function __endPersonalView(){
-if(statsPressTimer){clearTimeout(statsPressTimer);statsPressTimer=null;
-// Short click → toggle
-statsPersonal=!statsPersonal;
-}else{
-// Long press release → back to global
-statsPersonal=false;
-}
-applyStatsView()
+var statsPersonal=false;
+function __toggleStatsView(){
+statsPersonal=!statsPersonal;applyStatsView()
 }
 function applyStatsView(){
-var btn=$('statsToggle');btn.classList.toggle('personal',statsPersonal);
-btn.textContent=statsPersonal?t('stats_personal'):t('stats_global');
+var track=$('statsToggle'),label=$('statsLabel');
+track.classList.toggle('on',statsPersonal);
+label.textContent=statsPersonal?t('stats_personal_label'):t('stats_prefix');
 updateStatsUI()
 }
 
@@ -752,7 +748,7 @@ sigInput.value='';renderSW()
 }
 
 // ===== Init =====
-lang=detectLang();applyLanguage();loadUser();updateIdBtn();fetchStats();
+lang=detectLang();applyLanguage();loadUser();updateIdBtn();applyStatsView();fetchStats();
 
 // Count unique visitors
 if(!localStorage.getItem('ct-visitor')){localStorage.setItem('ct-visitor','1');visitorCount++;syncToGist()}
@@ -775,7 +771,7 @@ if(!serverClogged)setStatus('status_default','');
 
 // Expose handlers to global scope (for HTML onclick)
 window.__showIdModal=__showIdModal;window.__hideIdModal=__hideIdModal;window.__confirmId=__confirmId;
-window.__toggleStatsView=__toggleStatsView;window.__startPersonalView=__startPersonalView;window.__endPersonalView=__endPersonalView;
+window.__toggleStatsView=__toggleStatsView;
 window.__addSignature=__addSignature;
 window.__toggleLB=__toggleLB;window.__toggleSW=__toggleSW;
 window.__showGiftModal=__showGiftModal;window.__hideGiftModal=__hideGiftModal;window.__sendGift=__sendGift;
