@@ -322,7 +322,7 @@ zh:{
 title:'💩 赛博厕所',subtitle:'带薪拉屎模拟器',
 tagline:'让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
 stats_prefix:'在你之前已有：',stats_personal_label:'看看我干的好事：',
-id_title:'👤 输入ID',id_desc:'输入你的ID加载个人数据',id_btn:'确认',
+id_title:'👤 输入ID',id_desc:'输入你的ID加载个人数据',id_btn:'确认',id_filtered:'⚠️ 该ID包含敏感词，请重新输入',
 stat_my_flushes:'我的拉屎',stat_my_golden:'🌟黄金巨蟒',stat_my_lookbacks:'👀回头',
 sync_btn:'🔄 同步',
 status_default:'💡 点击马桶拉屎，点击水箱冲水',status_flushing:'🚿 冲水中...',
@@ -346,7 +346,7 @@ en:{
 title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
 tagline:'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
 stats_prefix:'Before you:',stats_personal_label:'Look what I did:',
-id_title:'👤 Enter ID',id_desc:'Enter your ID to load your data',id_btn:'Confirm',
+id_title:'👤 Enter ID',id_desc:'Enter your ID to load your data',id_btn:'Confirm',id_filtered:'⚠️ This ID contains blocked words, please try another',
 stat_my_flushes:'My Poops',stat_my_golden:'🌟Golden',stat_my_lookbacks:'👀Look',
 sync_btn:'🔄 Sync',
 status_default:'💡 Click bowl to poop, click tank to flush',
@@ -405,8 +405,23 @@ function detectLang(){var s=localStorage.getItem('ct-lang');if(s==='zh'||s==='en
 function toggleLang(to){if(to===lang)return;lang=to;localStorage.setItem('ct-lang',lang);applyLanguage()}
 
 // ===== User =====
+// ===== ID Filter =====
+var blockedIdPatterns=[
+/\brat\b/i,/rat[0-9]*/i,
+/^rat$/i,
+/fuck/i,/shit/i,/ass/i,/dick/i,/cock/i,/bitch/i,/whore/i,/porn/i,
+/piss/i,/crap/i,/slut/i,/cunt/i,
+/草泥马/i,/傻逼/i,/你妈/i,/他妈/i,/操你/i,/肏你/i,
+/废物/i,/去死/i,/混蛋/i,/狗屎/i,
+];
+function isValidId(id){
+for(var i=0;i<blockedIdPatterns.length;i++){
+if(blockedIdPatterns[i].test(id))return false;
+}
+return true;
+}
 // ===== User / ID =====
-function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();updateIdBtn()}}
+function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){if(!isValidId(id.trim())){localStorage.removeItem('ct-user');myUserId='';updateIdBtn();return}myUserId=id.trim();updateIdBtn()}}
 function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);updateIdBtn()}
 function updateIdBtn(){
 var btn=$('idBtn');
@@ -419,6 +434,7 @@ $('idModal').classList.add('show');var inp=$('idModalInput');inp.value=myUserId|
 function __hideIdModal(){$('idModal').classList.remove('show')}
 function __confirmId(){
 var inp=$('idModalInput');var id=inp.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
+if(!isValidId(id)){showToast(t('id_filtered')||'⚠️ 该ID包含敏感词，请重新输入');return}
 saveUser(id);__hideIdModal();
 checkGiftNotifications()
 }
@@ -503,6 +519,7 @@ updateStatsUI();renderLB()
 function __sendGift(){
 var target=giftInput.value.trim();if(!target||target.length<1)return;
 if(target===myUserId){showToast(lang==='zh'?'不能搬给自己':'Cannot gift to yourself');return}
+if(!isValidId(target)){showToast(t('id_filtered')||'⚠️ 该ID包含敏感词');return}
 if(target.length>12)target=target.slice(0,12);
 var vol=parseFloat(serverPoopVolume.toFixed(1));
 if(vol<=0){showToast(lang==='zh'?'没有屎可搬':'Nothing to gift');return}
