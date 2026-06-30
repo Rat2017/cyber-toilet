@@ -340,7 +340,7 @@ status_overflow:'💦 漾出 +2L水！',
 status_unclogging:'🧹 正在疏通...',status_unclogged:'通了！',status_unclog_fail:'😰 没通开...',
 status_lookback:'👀 回头看了一眼...',
 lb_normal:'🤷 平平无奇',lb_golden:'🐍 黄金巨蟒！金光闪闪！',lb_strawberry:'🍓 草莓塔！！！',
-flushes:'拉屎人数',stat_flushes:'冲水次数',stat_clogs:'堵马桶次数',
+stat_people:'带薪拉屎人数',stat_flushes:'冲水次数',stat_clogs:'堵马桶次数',
 stat_overflow_count:'漾出次数',stat_gift_sent:'搬屎',stat_gift_recv:'被搬',stat_lookbacks:'回头看',
 lookback:'回头看一眼',plunger:'通一下',flush_btn:'🚿 冲水',gift_btn:'📦 搬屎',clog_badge:'堵了',
 gift_title:'📦 搬屎',gift_desc:'选择要搬给谁',gift_send:'📦 搬走',gift_hint:'会在对方登录时显示',
@@ -365,7 +365,7 @@ status_poop:'Pooped {poop}L 💩, total {total}L',
 status_overflow:'💦 Overflow +2L!',
 status_unclogging:'🧹 Plunging...',status_unclogged:'Unclogged!',status_unclog_fail:'😰 Try again...',
 lb_normal:'🤷 Regular poop',lb_golden:'🐍 Golden Python!',lb_strawberry:'🍓 Strawberry Tower!!!',
-flushes:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
+stat_people:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
 stat_overflow_count:'Overflows',stat_gift_sent:'Sent',stat_gift_recv:'Received',stat_lookbacks:'Look Backs',
 lookback:'Look Back',plunger:'Plunge',flush_btn:'🚿 Flush',gift_btn:'📦 Gift',clog_badge:'Clogged',
 gift_title:'📦 Gift Poop',gift_desc:'Choose a recipient',gift_send:'📦 Send',gift_hint:'They will see it on login',
@@ -461,7 +461,6 @@ var g=raw.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
 serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
 usersData=raw.users||{};userList=raw.userList||[];poopGifts=raw.poopGifts||{};
-if(myUserId&&userList.indexOf(myUserId)===-1){userList.push(myUserId);userList.sort()}
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();checkGiftNotifications();
 if(!serverClogged&&(currentStatusKey==='status_clogged'||currentStatusKey==='status_unclog_fail'))setStatus('status_default','');
 }).catch(function(e){console.warn('Gist fetch:',e)})
