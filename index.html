@@ -448,7 +448,7 @@ var raw;try{raw=JSON.parse(data.files['stats.json'].content)}catch(e){return}
 if(typeof raw.people==='number'&&raw.global===undefined)raw={global:raw,users:{},userList:[],poopGifts:{}};
 var g=raw.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;
-serverClogged=!!g.clogged;serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
+serverClogged=!!g.clogged;serverPoopVolume=g.poopVolume||0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
 usersData=raw.users||{};userList=raw.userList||[];poopGifts=raw.poopGifts||{};
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();checkGiftNotifications();
 if(!serverClogged&&(currentStatusKey==='status_clogged'||currentStatusKey==='status_unclog_fail'))setStatus('status_default','');
@@ -466,7 +466,7 @@ users:usersData,userList:userList,poopGifts:poopGifts})}}})})
 var s;try{s=JSON.parse(data.files['stats.json'].content)}catch(e){throw new Error('parse')}
 var g=s.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
-serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
+serverPoopVolume=g.poopVolume||0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
 usersData=s.users||{};userList=s.userList||[];poopGifts=s.poopGifts||{};
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();
 }).catch(function(e){console.warn('Gist sync:',e)})
