@@ -81,11 +81,6 @@ h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bott
 .poop-hit:active{background:rgba(139,69,19,0.12)}
 .poop-hit.disabled,.flush-hit.disabled{cursor:not-allowed;background:transparent!important}
 
-/* Hit labels */
-.hit-label{position:absolute;font-size:.6rem;color:#bbb;pointer-events:none;z-index:5;opacity:0;transition:opacity .3s}
-.flush-label{top:50px;left:50%;transform:translateX(-50%)}
-.poop-label{bottom:80px;left:50%;transform:translateX(-50%)}
-.toilet-wrapper:hover .hit-label{opacity:1}
 
 /* Plunger / action buttons row */
 .action-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;min-height:52px}
@@ -187,7 +182,7 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
 
 <div class="app-layout">
   <!-- Left Panel: Leaderboard -->
-  <div class="panel panel-l" id="lbPanel">
+  <div class="panel panel-l collapsed" id="lbPanel">
     <button class="panel-close" onclick="__toggleLB()">✕</button>
     <div class="panel-inner">
       <div class="panel-title">
@@ -240,8 +235,6 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
       </svg>
       <div class="toilet-hit flush-hit" id="flushHit" title="冲水"></div>
       <div class="toilet-hit poop-hit" id="poopHit" title="拉屎"></div>
-      <div class="hit-label flush-label" data-l10n="hint_flush">🚿 冲水</div>
-      <div class="hit-label poop-label" data-l10n="hint_poop">💩 拉屎</div>
       <div class="splash-area" id="splashArea"></div>
       <div class="clog-badge" id="clogBadge">🧱 <span data-l10n="clog_badge">堵了</span></div>
     </div>
@@ -279,7 +272,7 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
   </div>
 
   <!-- Right Panel: Signature Wall -->
-  <div class="panel panel-r" id="swPanel">
+  <div class="panel panel-r collapsed" id="swPanel">
     <button class="panel-close" onclick="__toggleSW()">✕</button>
     <div class="panel-inner">
       <div class="panel-title">
@@ -353,7 +346,6 @@ lookback:'回头看一眼',plunger:'通一下',flush_btn:'🚿 冲水',gift_btn:
 gift_title:'📦 搬屎',gift_desc:'选择要搬给谁',gift_send:'📦 搬走',gift_hint:'会在对方登录时显示',
 footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 排行榜',lb_collapse:'收起',lb_loading:'加载中...',lb_empty:'暂无数据',
-hint_flush:'🚿 冲水',hint_poop:'💩 拉屎',
 sw_title:'📝 签名墙',sw_collapse:'收起',
 lb_tab_flushes:'🚿冲水',lb_tab_clogs:'🔧堵',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
 },
@@ -378,7 +370,6 @@ lookback:'Look Back',plunger:'Plunge',flush_btn:'🚿 Flush',gift_btn:'📦 Gift
 gift_title:'📦 Gift Poop',gift_desc:'Choose a recipient',gift_send:'📦 Send',gift_hint:'They will see it on login',
 footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 Leaderboard',lb_collapse:'Collapse',lb_loading:'Loading...',lb_empty:'No data',
-hint_flush:'🚿 Flush',hint_poop:'💩 Poop',
 sw_title:'📝 Signatures',sw_collapse:'Collapse',
 lb_tab_flushes:'🚿Flush',lb_tab_clogs:'🔧Clog',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
 }
@@ -465,6 +456,8 @@ if(typeof raw.people==='number'&&raw.global===undefined)raw={global:raw,users:{}
 var g=raw.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
 serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;visitorCount=g.visitorCount||0;
+// Force unclogged if Gist says so
+if(typeof g.clogged==='boolean'&&!g.clogged){serverClogged=false;toiletEl.classList.remove('clogged');clogBadge.classList.remove('show');plungerBtn.style.display='none'}
 usersData=raw.users||{};userList=raw.userList||[];poopGifts=raw.poopGifts||{};
 updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();checkGiftNotifications();
 if(!serverClogged&&(currentStatusKey==='status_clogged'||currentStatusKey==='status_unclog_fail'))setStatus('status_default','');
@@ -748,10 +741,10 @@ sigInput.value='';renderSW()
 }
 
 // ===== Init =====
-lang=detectLang();applyLanguage();loadUser();updateIdBtn();applyStatsView();fetchStats();
-
-// Count unique visitors
-if(!localStorage.getItem('ct-visitor')){localStorage.setItem('ct-visitor','1');visitorCount++;syncToGist()}
+lang=detectLang();applyLanguage();loadUser();updateIdBtn();applyStatsView();fetchStats().then(function(){
+// Count unique visitor after fetchStats to avoid overwrite race
+if(!localStorage.getItem('ct-visitor')){localStorage.setItem('ct-visitor','1');visitorCount++;updateStatsUI();syncToGist()}
+});
 
 // Event wiring
 poopHit.addEventListener('click',handlePoop);
