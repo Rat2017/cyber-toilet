@@ -733,8 +733,7 @@ lang=detectLang();applyLanguage();loadUser();updateIdBtn();applyStatsView();
 // Init panel toggle text (default collapsed)
 $('lbToggle').textContent=t('lb_expand');$('swToggle').textContent=t('lb_expand');
 fetchStats().then(function(){
-// Count unique visitor after fetchStats to avoid overwrite race
-if(!localStorage.getItem('ct-visitor')){localStorage.setItem('ct-visitor','1');visitorCount++;updateStatsUI();syncToGist()}
+visitorCount++;updateStatsUI();syncToGist()
 });
 
 // Event wiring
