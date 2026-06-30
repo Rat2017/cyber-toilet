@@ -537,23 +537,22 @@ function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTim
 function updateStatsUI(){
 var d=statsPersonal?getMyUserData():null;
 if(d){
-statPeople.textContent=d.flushes||0;statFlushes.textContent='-';statClogs.textContent='-';
-statOverflowCount.textContent=d.overflowCount||0;statLookbacks.textContent=d.lookBacks||0;
-statGiftSent.textContent=d.giftSentCount||0;statGiftRecv.textContent=d.giftRecvCount||0;
-// Update labels for personal mode - use data attributes from the static text
-document.querySelectorAll('.stat-card .stat-label')[0].textContent=t('stat_my_flushes');
-document.querySelectorAll('.stat-card .stat-label')[2].textContent=t('stat_my_golden');
-document.querySelectorAll('.stat-card .stat-label')[4].textContent=t('stat_my_lookbacks');
+statPeople.textContent=d.flushes||0;
+statFlushes.textContent=d.goldenPython||0;
+statClogs.textContent=d.clogs||0;
+statOverflowCount.textContent=d.overflowCount||0;
+statGiftSent.textContent=d.giftSentCount||0;
+statGiftRecv.textContent=d.giftRecvCount||0;
+statLookbacks.textContent=d.lookBacks||0;
 }else{
-statPeople.textContent=visitorCount;statFlushes.textContent=serverFlushes;statClogs.textContent=serverClogs;
-statOverflowCount.textContent=serverOverflowCount;statLookbacks.textContent=serverLookBacks;
+statPeople.textContent=visitorCount;
+statFlushes.textContent=serverFlushes;
+statClogs.textContent=serverClogs;
+statOverflowCount.textContent=serverOverflowCount;
+statLookbacks.textContent=serverLookBacks;
 var g=getMyUserData();
 statGiftSent.textContent=g?(g.giftSentCount||0):0;
 statGiftRecv.textContent=g?(g.giftRecvCount||0):0;
-// Restore default labels
-document.querySelectorAll('.stat-card .stat-label')[0].textContent=t('stat_people');
-document.querySelectorAll('.stat-card .stat-label')[2].textContent=t('stat_clogs');
-document.querySelectorAll('.stat-card .stat-label')[4].textContent=t('stat_gift_sent');
 }
 }
 function updatePoopUI(){
