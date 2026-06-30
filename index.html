@@ -51,9 +51,13 @@ body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align
 .lang-opt:hover{color:#888}
 .lang-opt.active{color:#2c2c2c;font-weight:700;cursor:default}
 .lang-sep{color:#ddd;font-size:.7rem}
-.user-btn{cursor:pointer;background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:3px 12px;font-size:.78rem;font-family:inherit;color:#999;transition:background .2s,color .2s}
-.user-btn:hover{background:rgba(255,255,255,0.9);color:#555}
-.user-btn.active{color:#1e88e5;font-weight:600}
+id-area{display:inline-flex;align-items:center;gap:4px}
+.id-input{width:64px;border-radius:20px;border:1px solid #ddd;padding:3px 8px;font-size:.75rem;font-family:inherit;text-align:center;outline:none;background:rgba(255,255,255,0.6);transition:border-color .2s}
+.id-input:focus{border-color:#1e88e5;width:80px}
+.id-btn{background:rgba(255,255,255,0.6);border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;color:#999;transition:background .2s,color .2s}
+.id-btn:hover{background:rgba(255,255,255,0.9);color:#555}
+.id-display{cursor:pointer;font-size:.78rem;color:#1e88e5;font-weight:600;padding:3px 10px;border-radius:20px;transition:background .2s}
+.id-display:hover{background:rgba(255,255,255,0.8)}
 .sync-btn{background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:3px 12px;font-size:.78rem;font-family:inherit;color:#999;cursor:pointer;transition:background .2s,color .2s}
 .sync-btn:hover{background:rgba(255,255,255,0.9);color:#555}
 .sync-btn:active{transform:scale(.95)}
@@ -138,9 +142,6 @@ h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bott
 .modal-desc{font-size:.8rem;color:#999;margin-bottom:12px}
 .modal-input{width:100%;border:2px solid #eee;border-radius:14px;padding:8px 14px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s;text-align:center}
 .modal-input:focus{border-color:#1e88e5}
-.modal-btn{background:#1e88e5;color:#fff;border:none;border-radius:14px;padding:8px 24px;font-size:.85rem;cursor:pointer;font-family:inherit;margin-top:10px;font-weight:600;transition:background .2s}
-.modal-btn:hover{background:#1565c0}
-.modal-btn:active{transform:scale(.97)}
 .modal-close{position:absolute;top:8px;right:12px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999}
 .modal-box{position:relative}
 .modal-hint{font-size:.7rem;color:#bbb;margin-top:8px}
@@ -203,7 +204,10 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
     <div class="top-bar">
       <button class="side-toggle side-toggle-l" onclick="__toggleLB()">🏆</button>
       <div style="flex:1"></div>
-      <button class="user-btn" id="userBtn" onclick="__showUserModal()">👤 登录</button>
+      <span class="id-area" id="idArea">
+        <input class="id-input" id="idInput" placeholder="ID…" maxlength="12" onkeydown="if(event.key==='Enter')__setId()">
+        <button class="id-btn" id="idBtn" onclick="__setId()">+</button>
+      </span>
       <div class="lang-switch">
         <span class="lang-opt" data-lang="zh" onclick="__toggleLang('zh')">中</span>
         <span class="lang-sep">|</span>
@@ -291,17 +295,6 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
   </div>
 </div>
 
-<!-- User Modal -->
-<div class="modal-overlay" id="userModal">
-  <div class="modal-box">
-    <button class="modal-close" onclick="__hideUserModal()">✕</button>
-    <div class="modal-title" data-l10n="modal_title">👤 你的ID</div>
-    <div class="modal-desc" data-l10n="modal_desc">输入一个ID，你的数据将保存在这个ID下</div>
-    <input class="modal-input" id="modalInput" placeholder="输入ID..." maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')__confirmUser()">
-    <button class="modal-btn" onclick="__confirmUser()" data-l10n="modal_btn">确认</button>
-    <div class="modal-hint" data-l10n="modal_hint">同一ID可随时继续刷数据</div>
-  </div>
-</div>
 
 <!-- Gift Modal -->
 <div class="modal-overlay" id="giftModal">
@@ -346,7 +339,6 @@ footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 排行榜',lb_collapse:'收起',lb_loading:'加载中...',lb_empty:'暂无数据',
 hint_flush:'🚿 冲水',hint_poop:'💩 拉屎',
 sw_title:'📝 签名墙',sw_collapse:'收起',
-modal_title:'👤 你的ID',modal_desc:'输入一个ID，你的数据将保存在这个ID下',modal_btn:'确认',modal_hint:'同一ID可随时继续刷数据',
 lb_tab_flushes:'🚿冲水',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
 },
 en:{
@@ -369,7 +361,6 @@ footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 Leaderboard',lb_collapse:'Collapse',lb_loading:'Loading...',lb_empty:'No data',
 hint_flush:'🚿 Flush',hint_poop:'💩 Poop',
 sw_title:'📝 Signatures',sw_collapse:'Collapse',
-modal_title:'👤 Your ID',modal_desc:'Enter an ID to save your stats',modal_btn:'Confirm',modal_hint:'Use the same ID anytime',
 lb_tab_flushes:'🚿Flush',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
 }
 };
@@ -392,7 +383,7 @@ var flushHit=$('flushHit'),poopHit=$('poopHit'),flushBtn=$('flushBtn'),plungerBt
 var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
 var statOverflowCount=$('statOverflowCount'),statLookbacks=$('statLookbacks');
 var statGiftSent=$('statGiftSent'),statGiftRecv=$('statGiftRecv');
-var userBtn=$('userBtn'),userModal=$('userModal'),modalInput=$('modalInput');
+var idArea=$('idArea');
 var lbList=$('lbList'),lbTabs=$('lbTabs');
 var sigList=$('sigList'),sigInput=$('sigInput');
 var giftModal=$('giftModal'),giftInput=$('giftInput'),giftUserList=$('giftUserList'),giftVol=$('giftVol');
@@ -411,19 +402,26 @@ function detectLang(){var s=localStorage.getItem('ct-lang');if(s==='zh'||s==='en
 function toggleLang(to){if(to===lang)return;lang=to;localStorage.setItem('ct-lang',lang);applyLanguage()}
 
 // ===== User =====
-function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();updateUserBtn()}}
-function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);updateUserBtn()}
-function updateUserBtn(){if(myUserId){userBtn.textContent='👤 '+myUserId;userBtn.classList.add('active')}else{userBtn.textContent='👤 '+(lang==='zh'?'登录':'Login');userBtn.classList.remove('active')}}
-function __showUserModal(){userModal.classList.add('show');modalInput.value=myUserId||'';modalInput.focus();modalInput.select()}
-function __hideUserModal(){userModal.classList.remove('show')}
-function __confirmUser(){
-var id=modalInput.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
+function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();renderId()}}
+function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);renderId()}
+function renderId(){
+var area=$('idArea');
+if(myUserId){
+area.innerHTML='<span class="id-display" onclick="__editId()">👤 '+myUserId+'</span>';
+}else{
+area.innerHTML='<input class="id-input" id="idInput" placeholder="ID…" maxlength="12" onkeydown="if(event.key===\'Enter\')__setId()"><button class="id-btn" onclick="__setId()">+</button>';
+var inp=$('idInput');if(inp)setTimeout(function(){inp.focus()},100)
+}}
+function __setId(){
+var inp=$('idInput');if(!inp)return;
+var id=inp.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
 var isNew=!myUserId||userList.indexOf(id)===-1;
-saveUser(id);__hideUserModal();
+if(myUserId!==id)isNew=true;
+saveUser(id);
 if(isNew){if(userList.indexOf(id)===-1){userList.push(id);userList.sort()}syncToGist()}
-// Check for gift notifications
 checkGiftNotifications()
 }
+function __editId(){var old=myUserId;myUserId='';localStorage.removeItem('ct-user');renderId();}
 
 // ===== Gist =====
 var GIST_ID='432d134d33e8b3fe5e4d7ef463fb5f5e';
@@ -703,7 +701,7 @@ sigInput.value='';renderSW()
 }
 
 // ===== Init =====
-lang=detectLang();applyLanguage();loadUser();updateUserBtn();fetchStats();
+lang=detectLang();applyLanguage();loadUser();renderId();fetchStats();
 
 // Event wiring
 poopHit.addEventListener('click',handlePoop);
