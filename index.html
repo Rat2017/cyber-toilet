@@ -735,6 +735,8 @@ $('lbToggle').textContent=t('lb_expand');$('swToggle').textContent=t('lb_expand'
 fetchStats().then(function(){
 visitorCount++;updateStatsUI();syncToGist()
 });
+// Auto-sync every 30s so leaderboard & wall reflect other users' changes
+setInterval(fetchStats,30000);
 
 // Event wiring
 poopHit.addEventListener('click',handlePoop);
