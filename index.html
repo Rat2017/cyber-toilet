@@ -236,7 +236,6 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
       <div class="toilet-hit flush-hit" id="flushHit" title="冲水"></div>
       <div class="toilet-hit poop-hit" id="poopHit" title="拉屎"></div>
       <div class="splash-area" id="splashArea"></div>
-      <div class="clog-badge" id="clogBadge">🧱 <span data-l10n="clog_badge">堵了</span></div>
     </div>
 
     <!-- Poop bar -->
@@ -387,7 +386,7 @@ var lbCategories=['flushes','clogs','goldenPython','strawberryTower','lookBacks'
 
 // DOM refs
 function $(id){return document.getElementById(id)}
-var toiletEl=$('toilet'),splashArea=$('splashArea'),clogBadge=$('clogBadge');
+var toiletEl=$('toilet'),splashArea=$('splashArea');
 var statusMsg=$('statusMsg'),capacityLine=$('capacityLine');
 var flushHit=$('flushHit'),poopHit=$('poopHit'),flushBtn=$('flushBtn'),plungerBtn=$('plungerBtn'),giftBtn=$('giftBtn'),lookbackBtn=$('lookbackBtn');
 var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
@@ -573,8 +572,8 @@ isFull=serverPoopVolume>=CAPACITY
 function bumpStat(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
 function setStatus(key,type){currentStatusKey=key;currentStatusType=type||'';statusMsg.textContent=t(key);statusMsg.className='status-msg'+(type?' '+type:'')}
 function updateCloggedUI(){
-if(serverClogged){toiletEl.classList.add('clogged');clogBadge.classList.add('show');plungerBtn.style.display=''}
-else{toiletEl.classList.remove('clogged');clogBadge.classList.remove('show');plungerBtn.style.display='none'}
+if(serverClogged){toiletEl.classList.add('clogged');flushBtn.innerHTML='<span>🧱</span><span class="action-label">堵了</span>';flushBtn.onclick=handleFlush;plungerBtn.style.display=''}
+else{toiletEl.classList.remove('clogged');flushBtn.innerHTML='<span>🚿</span><span class="action-label" data-l10n="flush_btn">冲水</span>';flushBtn.onclick=handleFlush;plungerBtn.style.display='none'}
 }
 
 // ===== Splash =====
