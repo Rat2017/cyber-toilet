@@ -763,6 +763,14 @@ if(e.key==='g'||e.key==='G'){__showGiftModal();e.preventDefault()}
 
 if(!serverClogged)setStatus('status_default','');
 
+// Expose handlers to global scope (for HTML onclick)
+window.__showIdModal=__showIdModal;window.__hideIdModal=__hideIdModal;window.__confirmId=__confirmId;
+window.__toggleStatsView=__toggleStatsView;window.__startPersonalView=__startPersonalView;window.__endPersonalView=__endPersonalView;
+window.__addSignature=__addSignature;
+window.__toggleLB=__toggleLB;window.__toggleSW=__toggleSW;
+window.__showGiftModal=__showGiftModal;window.__hideGiftModal=__hideGiftModal;window.__sendGift=__sendGift;
+window.__toggleLang=toggleLang;window.__syncStats=__syncStats;
+
 })();
 </script>
 </body>
