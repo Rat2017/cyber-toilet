@@ -51,13 +51,6 @@ body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align
 .lang-opt:hover{color:#888}
 .lang-opt.active{color:#2c2c2c;font-weight:700;cursor:default}
 .lang-sep{color:#ddd;font-size:.7rem}
-id-area{display:inline-flex;align-items:center;gap:4px}
-.id-input{width:64px;border-radius:20px;border:1px solid #ddd;padding:3px 8px;font-size:.75rem;font-family:inherit;text-align:center;outline:none;background:rgba(255,255,255,0.6);transition:border-color .2s}
-.id-input:focus{border-color:#1e88e5;width:80px}
-.id-btn{background:rgba(255,255,255,0.6);border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;color:#999;transition:background .2s,color .2s}
-.id-btn:hover{background:rgba(255,255,255,0.9);color:#555}
-.id-display{cursor:pointer;font-size:.78rem;color:#1e88e5;font-weight:600;padding:3px 10px;border-radius:20px;transition:background .2s}
-.id-display:hover{background:rgba(255,255,255,0.8)}
 .sync-btn{background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:3px 12px;font-size:.78rem;font-family:inherit;color:#999;cursor:pointer;transition:background .2s,color .2s}
 .sync-btn:hover{background:rgba(255,255,255,0.9);color:#555}
 .sync-btn:active{transform:scale(.95)}
@@ -130,6 +123,11 @@ h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bott
 .stat-card:nth-child(7) .stat-value{color:#f06292}
 .stat-value.bump{animation:bump .25s ease}
 @keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+
+/* Stats toggle */
+.stats-toggle{cursor:pointer;background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:2px 12px;font-size:.72rem;font-family:inherit;color:#999;transition:all .2s;margin-left:6px}
+.stats-toggle:active{transform:scale(.93)}
+.stats-toggle.personal{background:#1e88e5;color:#fff}
 
 /* Footer */
 .footer{margin-top:24px;font-size:.7rem;color:#ccc;letter-spacing:.3px}
@@ -204,10 +202,7 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
     <div class="top-bar">
       <button class="side-toggle side-toggle-l" onclick="__toggleLB()">🏆</button>
       <div style="flex:1"></div>
-      <span class="id-area" id="idArea">
-        <input class="id-input" id="idInput" placeholder="ID…" maxlength="12" onkeydown="if(event.key==='Enter')__setId()">
-        <button class="id-btn" id="idBtn" onclick="__setId()">+</button>
-      </span>
+      <button class="sync-btn" id="idBtn" onclick="__showIdModal()">👤 ID</button>
       <div class="lang-switch">
         <span class="lang-opt" data-lang="zh" onclick="__toggleLang('zh')">中</span>
         <span class="lang-sep">|</span>
@@ -263,7 +258,7 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
     </div>
 
     <!-- Stats -->
-    <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
+    <p class="stats-prefix"><span data-l10n="stats_prefix">在你之前已有：</span><button class="stats-toggle" id="statsToggle" onmousedown="__startPersonalView()" onmouseup="__endPersonalView()" onmouseleave="__endPersonalView()" ontouchstart="__startPersonalView()" ontouchend="__endPersonalView()" onclick="__toggleStatsView()" data-l10n="stats_global">全员</button></p>
     <div class="stats">
       <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div><div class="stat-value" id="statPeople">0</div></div>
       <div class="stat-card"><div class="stat-icon">🚿</div><div class="stat-label" data-l10n="stat_flushes">冲水次数</div><div class="stat-value" id="statFlushes">0</div></div>
@@ -311,6 +306,17 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
   </div>
 </div>
 
+<!-- ID Modal -->
+<div class="modal-overlay" id="idModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="__hideIdModal()">✕</button>
+    <div class="modal-title" data-l10n="id_title">👤 输入ID</div>
+    <div class="modal-desc" data-l10n="id_desc">输入你的ID加载个人数据</div>
+    <input class="modal-input" id="idModalInput" placeholder="ID…" maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')__confirmId()">
+    <button class="gift-btn" onclick="__confirmId()" style="background:#1e88e5;margin-top:10px" data-l10n="id_btn">确认</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -322,7 +328,10 @@ var L10N={
 zh:{
 title:'💩 赛博厕所',subtitle:'带薪拉屎模拟器',
 tagline:'让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
-stats_prefix:'在你之前已有：',sync_btn:'🔄 同步',
+stats_prefix:'在你之前已有：',stats_global:'全员',stats_personal:'个人',
+id_title:'👤 输入ID',id_desc:'输入你的ID加载个人数据',id_btn:'确认',
+stat_my_flushes:'我的拉屎',stat_my_golden:'🌟黄金巨蟒',stat_my_lookbacks:'👀回头',
+sync_btn:'🔄 同步',
 status_default:'💡 点击马桶拉屎，点击水箱冲水',status_flushing:'🚿 冲水中...',
 status_flush_ok:'✅ 冲水成功',status_clogged:'💩 堵了',status_full:'💩 已经被您拉满了！',
 status_pooping:'💩 拉了一坨...',
@@ -344,7 +353,10 @@ lb_tab_flushes:'🚿冲水',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓�
 en:{
 title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
 tagline:'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
-stats_prefix:'Before you:',sync_btn:'🔄 Sync',
+stats_prefix:'Before you:',stats_global:'Global',stats_personal:'Mine',
+id_title:'👤 Enter ID',id_desc:'Enter your ID to load your data',id_btn:'Confirm',
+stat_my_flushes:'My Poops',stat_my_golden:'🌟Golden',stat_my_lookbacks:'👀Look',
+sync_btn:'🔄 Sync',
 status_default:'💡 Click bowl to poop, click tank to flush',
 status_flushing:'🚿 Flushing...',status_flush_ok:'✅ Flush successful',
 status_clogged:'💩 Clogged',status_full:'💩 Full! 15L max!',
@@ -383,7 +395,7 @@ var flushHit=$('flushHit'),poopHit=$('poopHit'),flushBtn=$('flushBtn'),plungerBt
 var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
 var statOverflowCount=$('statOverflowCount'),statLookbacks=$('statLookbacks');
 var statGiftSent=$('statGiftSent'),statGiftRecv=$('statGiftRecv');
-var idArea=$('idArea');
+// idBtn is accessed via $('idBtn') in functions
 var lbList=$('lbList'),lbTabs=$('lbTabs');
 var sigList=$('sigList'),sigInput=$('sigInput');
 var giftModal=$('giftModal'),giftInput=$('giftInput'),giftUserList=$('giftUserList'),giftVol=$('giftVol');
@@ -402,26 +414,39 @@ function detectLang(){var s=localStorage.getItem('ct-lang');if(s==='zh'||s==='en
 function toggleLang(to){if(to===lang)return;lang=to;localStorage.setItem('ct-lang',lang);applyLanguage()}
 
 // ===== User =====
-function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();renderId()}}
-function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);renderId()}
-function renderId(){
-var area=$('idArea');
-if(myUserId){
-area.innerHTML='<span class="id-display" onclick="__editId()">👤 '+myUserId+'</span>';
-}else{
-area.innerHTML='<input class="id-input" id="idInput" placeholder="ID…" maxlength="12" onkeydown="if(event.key===\'Enter\')__setId()"><button class="id-btn" onclick="__setId()">+</button>';
-var inp=$('idInput');if(inp)setTimeout(function(){inp.focus()},100)
-}}
-function __setId(){
-var inp=$('idInput');if(!inp)return;
-var id=inp.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
-var isNew=!myUserId||userList.indexOf(id)===-1;
-if(myUserId!==id)isNew=true;
-saveUser(id);
-if(isNew){if(userList.indexOf(id)===-1){userList.push(id);userList.sort()}syncToGist()}
+// ===== User / ID =====
+function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();updateIdBtn()}}
+function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);updateIdBtn()}
+function updateIdBtn(){
+var btn=$('idBtn');
+if(myUserId){btn.textContent='👤 '+myUserId;btn.style.color='#1e88e5';btn.style.fontWeight='600'}
+else{btn.textContent='👤 ID';btn.style.color='';btn.style.fontWeight=''}
+}
+function __showIdModal(){
+$('idModal').classList.add('show');var inp=$('idModalInput');inp.value=myUserId||'';inp.focus();inp.select()
+}
+function __hideIdModal(){$('idModal').classList.remove('show')}
+function __confirmId(){
+var inp=$('idModalInput');var id=inp.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
+var isNew=myUserId!==id||userList.indexOf(id)===-1;
+saveUser(id);__hideIdModal();
+if(isNew){if(userList.indexOf(id)===-1){userList.push(id);userList.sort()}syncToGist();renderSW();renderLB()}
 checkGiftNotifications()
 }
-function __editId(){var old=myUserId;myUserId='';localStorage.removeItem('ct-user');renderId();}
+
+// ===== Stats View Toggle =====
+var statsPersonal=false,statsLongPress=false;
+function __toggleStatsView(){
+statsPersonal=!statsPersonal;statsLongPress=false;
+applyStatsView()
+}
+function __startPersonalView(){if(!myUserId)return;statsLongPress=true;statsPersonal=true;applyStatsView()}
+function __endPersonalView(){if(!statsLongPress)return;statsLongPress=false;statsPersonal=false;applyStatsView()}
+function applyStatsView(){
+var btn=$('statsToggle');btn.classList.toggle('personal',statsPersonal);
+btn.textContent=statsPersonal?t('stats_personal'):t('stats_global');
+updateStatsUI()
+}
 
 // ===== Gist =====
 var GIST_ID='432d134d33e8b3fe5e4d7ef463fb5f5e';
@@ -524,11 +549,26 @@ function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTim
 
 // ===== UI Updates =====
 function updateStatsUI(){
+var d=statsPersonal?getMyUserData():null;
+if(d){
+statPeople.textContent=d.flushes||0;statFlushes.textContent='-';statClogs.textContent='-';
+statOverflowCount.textContent=d.overflowCount||0;statLookbacks.textContent=d.lookBacks||0;
+statGiftSent.textContent=d.giftSentCount||0;statGiftRecv.textContent=d.giftRecvCount||0;
+// Update labels for personal mode - use data attributes from the static text
+document.querySelectorAll('.stat-card .stat-label')[0].textContent=t('stat_my_flushes');
+document.querySelectorAll('.stat-card .stat-label')[2].textContent=t('stat_my_golden');
+document.querySelectorAll('.stat-card .stat-label')[4].textContent=t('stat_my_lookbacks');
+}else{
 statPeople.textContent=serverPeople;statFlushes.textContent=serverFlushes;statClogs.textContent=serverClogs;
 statOverflowCount.textContent=serverOverflowCount;statLookbacks.textContent=serverLookBacks;
-var d=getMyUserData();
-statGiftSent.textContent=d?(d.giftSentCount||0):0;
-statGiftRecv.textContent=d?(d.giftRecvCount||0):0
+var g=getMyUserData();
+statGiftSent.textContent=g?(g.giftSentCount||0):0;
+statGiftRecv.textContent=g?(g.giftRecvCount||0):0;
+// Restore default labels
+document.querySelectorAll('.stat-card .stat-label')[0].textContent=t('stat_people');
+document.querySelectorAll('.stat-card .stat-label')[2].textContent=t('stat_clogs');
+document.querySelectorAll('.stat-card .stat-label')[4].textContent=t('stat_gift_sent');
+}
 }
 function updatePoopUI(){
 var pct=Math.min(serverPoopVolume/CAPACITY*100,100);
@@ -694,14 +734,18 @@ div.textContent=id;sigList.appendChild(div)
 }
 function __toggleSW(){var p=$('swPanel');if(window.innerWidth<=900){p.classList.toggle('open')}else{p.classList.toggle('collapsed');$('swBody').style.display=p.classList.contains('collapsed')?'none':''}}
 function __addSignature(){
-var id=sigInput.value.trim();if(!id||id.length<1)return;
+var id=sigInput.value.trim()||myUserId;
+if(!id||id.length<1)return;
 if(id.length>12)id=id.slice(0,12);
-if(userList.indexOf(id)===-1){userList.push(id);userList.sort();syncToGist()}
+var isNew=userList.indexOf(id)===-1;
+if(isNew){userList.push(id);userList.sort();syncToGist();renderLB()}
+// If not logged in, also set as current ID
+if(!myUserId){saveUser(id);if(isNew)__confirmId()}
 sigInput.value='';renderSW()
 }
 
 // ===== Init =====
-lang=detectLang();applyLanguage();loadUser();renderId();fetchStats();
+lang=detectLang();applyLanguage();loadUser();updateIdBtn();fetchStats();
 
 // Event wiring
 poopHit.addEventListener('click',handlePoop);
