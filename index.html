@@ -123,6 +123,7 @@ h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bott
 .stat-card:nth-child(4) .stat-value{color:#7b1fa2}
 .stat-card:nth-child(5) .stat-value{color:#00897b}
 .stat-card:nth-child(6) .stat-value{color:#6d4c41}
+.stat-card:nth-child(7) .stat-value{color:#f06292}
 .stat-value.bump{animation:bump .25s ease}
 @keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
 
@@ -254,6 +255,7 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
       <button class="action-btn" id="flushBtn"><span>🚿</span><span class="action-label" data-l10n="flush_btn">冲水</span></button>
       <button class="action-btn" id="plungerBtn" style="display:none"><span>🧹</span><span class="action-label" data-l10n="plunger">通一下</span></button>
       <button class="action-btn hidden" id="giftBtn"><span>📦</span><span class="action-label" data-l10n="gift_btn">搬屎</span></button>
+      <button class="action-btn hidden" id="lookbackBtn"><span>👀</span><span class="action-label" data-l10n="lookback">回头看一眼</span></button>
     </div>
 
     <!-- Stats -->
@@ -265,6 +267,7 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
       <div class="stat-card"><div class="stat-icon">💦</div><div class="stat-label" data-l10n="stat_overflow_count">漾出次数</div><div class="stat-value" id="statOverflowCount">0</div></div>
       <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label" data-l10n="stat_gift_sent">搬屎</div><div class="stat-value" id="statGiftSent">0</div></div>
       <div class="stat-card"><div class="stat-icon">📪</div><div class="stat-label" data-l10n="stat_gift_recv">被搬</div><div class="stat-value" id="statGiftRecv">0</div></div>
+      <div class="stat-card"><div class="stat-icon">👀</div><div class="stat-label" data-l10n="stat_lookbacks">回头看</div><div class="stat-value" id="statLookbacks">0</div></div>
     </div>
     <div class="footer" data-l10n="footer">🚀 Hosted on GitHub Pages</div>
   </div>
@@ -336,7 +339,7 @@ status_unclogging:'🧹 正在疏通...',status_unclogged:'✅ 通了！',status
 status_lookback:'👀 回头看了一眼...',
 lb_normal:'🤷 平平无奇',lb_golden:'🐍 黄金巨蟒！金光闪闪！',lb_strawberry:'🍓 草莓塔！！！',
 flushes:'拉屎人数',stat_flushes:'冲水次数',stat_clogs:'堵马桶次数',
-stat_overflow_count:'漾出次数',stat_gift_sent:'搬屎',stat_gift_recv:'被搬',
+stat_overflow_count:'漾出次数',stat_gift_sent:'搬屎',stat_gift_recv:'被搬',stat_lookbacks:'回头看',
 lookback:'回头看一眼',plunger:'通一下',flush_btn:'🚿 冲水',gift_btn:'📦 搬屎',clog_badge:'堵了',
 gift_title:'📦 搬屎',gift_desc:'选择要搬给谁',gift_send:'📦 搬走',gift_hint:'会在对方登录时显示',
 footer:'🚀 Hosted on GitHub Pages',
@@ -359,7 +362,7 @@ status_overflow:'💦 Overflow +2L!',
 status_unclogging:'🧹 Plunging...',status_unclogged:'✅ Unclogged!',status_unclog_fail:'😰 Try again...',
 lb_normal:'🤷 Regular poop',lb_golden:'🐍 Golden Python!',lb_strawberry:'🍓 Strawberry Tower!!!',
 flushes:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
-stat_overflow_count:'Overflows',stat_gift_sent:'Sent',stat_gift_recv:'Received',
+stat_overflow_count:'Overflows',stat_gift_sent:'Sent',stat_gift_recv:'Received',stat_lookbacks:'Look Backs',
 lookback:'Look Back',plunger:'Plunge',flush_btn:'🚿 Flush',gift_btn:'📦 Gift',clog_badge:'Clogged',
 gift_title:'📦 Gift Poop',gift_desc:'Choose a recipient',gift_send:'📦 Send',gift_hint:'They will see it on login',
 footer:'🚀 Hosted on GitHub Pages',
@@ -375,7 +378,7 @@ lb_tab_flushes:'🚿Flush',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Str
 var lang='zh',currentStatusKey='status_default',currentStatusType='';
 var serverPeople=0,serverFlushes=0,serverClogs=0,serverClogged=false;
 var serverPoopVolume=0,serverOverflowCount=0,serverOverflowVolume=0,serverLookBacks=0;
-var CAPACITY=15,isFlushing=false,isPooping=false,isFull=false;
+var CAPACITY=15,isFlushing=false,isPooping=false,isFull=false,canLookBack=false;
 var myUserId='';
 var usersData={},userList=[],poopGifts={};
 var lbCategory='flushes';
@@ -385,7 +388,7 @@ var lbCategories=['flushes','goldenPython','strawberryTower','lookBacks','overfl
 function $(id){return document.getElementById(id)}
 var toiletEl=$('toilet'),splashArea=$('splashArea'),clogBadge=$('clogBadge');
 var statusMsg=$('statusMsg'),capacityLine=$('capacityLine');
-var flushHit=$('flushHit'),poopHit=$('poopHit'),flushBtn=$('flushBtn'),plungerBtn=$('plungerBtn'),giftBtn=$('giftBtn');
+var flushHit=$('flushHit'),poopHit=$('poopHit'),flushBtn=$('flushBtn'),plungerBtn=$('plungerBtn'),giftBtn=$('giftBtn'),lookbackBtn=$('lookbackBtn');
 var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
 var statOverflowCount=$('statOverflowCount'),statLookbacks=$('statLookbacks');
 var statGiftSent=$('statGiftSent'),statGiftRecv=$('statGiftRecv');
@@ -567,6 +570,7 @@ serverPoopVolume=Math.min(serverPoopVolume+poop,CAPACITY);
 updatePoopUI();
 statusMsg.textContent=t('status_poop').replace('{poop}',poop.toFixed(1)).replace('{total}',serverPoopVolume.toFixed(1));
 statusMsg.className='status-msg';
+canLookBack=true;lookbackBtn.classList.remove('hidden');
 if(serverPoopVolume>=CAPACITY){setStatus('status_full','clogged')}
 },300)
 }
@@ -576,6 +580,7 @@ function handleFlush(){
 if(isFlushing)return;
 if(serverClogged){
 // Overflow when clogged
+canLookBack=false;lookbackBtn.classList.add('hidden');
 isFlushing=true;toiletEl.classList.add('flushing');createSplash();
 setTimeout(function(){
 toiletEl.classList.remove('flushing');isFlushing=false;
@@ -589,9 +594,11 @@ return
 }
 if(serverPoopVolume<=0){
 // Nothing to flush
+canLookBack=false;lookbackBtn.classList.add('hidden');
 statusMsg.textContent=lang==='zh'?'💡 还没有屎，先拉再冲':'💡 Poop first!';statusMsg.className='status-msg';
 return
 }
+canLookBack=false;lookbackBtn.classList.add('hidden');
 isFlushing=true;toiletEl.classList.add('flushing');createSplash();
 setTimeout(function(){
 toiletEl.classList.remove('flushing');isFlushing=false;
@@ -617,6 +624,27 @@ plungerBtn.classList.remove('working');
 if(Math.random()<0.75){serverClogged=false;updateCloggedUI();syncToGist();setStatus('status_unclogged','')}
 else{setStatus('status_unclog_fail','clogged')}
 },600)
+}
+
+// ===== Lookback =====
+function handleLookBack(){
+if(!canLookBack)return;
+canLookBack=false;lookbackBtn.classList.add('hidden');
+var roll=Math.random()*100,resultKey;
+if(roll<90)resultKey='lb_normal';
+else if(roll<98)resultKey='lb_golden';
+else resultKey='lb_strawberry';
+serverLookBacks++;updateStatsUI();bumpStat(statLookbacks);
+setStatus('status_lookback','flushing');
+if(myUserId){
+var d=getMyUserData();if(d){
+d.lookBacks=(d.lookBacks||0)+1;
+if(resultKey==='lb_golden')d.goldenPython=(d.goldenPython||0)+1;
+if(resultKey==='lb_strawberry')d.strawberryTower=(d.strawberryTower||0)+1;
+}}
+setTimeout(function(){statusMsg.textContent=t(resultKey);statusMsg.className='status-msg'},300);
+setTimeout(function(){renderLB()},600);
+syncToGist()
 }
 
 // ===== Leaderboard =====
@@ -683,6 +711,7 @@ flushHit.addEventListener('click',handleFlush);
 flushBtn.addEventListener('click',handleFlush);
 plungerBtn.addEventListener('click',handlePlunge);
 giftBtn.addEventListener('click',__showGiftModal);
+lookbackBtn.addEventListener('click',handleLookBack);
 
 document.addEventListener('keydown',function(e){
 if(e.key===' '||e.key==='Enter'){handleFlush();e.preventDefault()}
