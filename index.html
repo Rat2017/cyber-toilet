@@ -4,15 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-l10n="title">💩 Cyber Toilet</title>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#efe8e0;background-image:linear-gradient(90deg,rgba(180,165,150,0.12) 1px,transparent 1px),linear-gradient(rgba(180,165,150,0.12) 1px,transparent 1px);background-size:48px 48px;font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;user-select:none;padding:20px}
 .app-layout{display:flex;gap:20px;max-width:1100px;width:100%;align-items:flex-start;justify-content:center}
-.side-toggle{display:none}
 @media(max-width:900px){.app-layout{flex-direction:column;align-items:center}}
-@media(min-width:901px){.side-toggle{display:none!important}}
 
 /* Panels */
 .panel{width:240px;flex-shrink:0;text-align:left;position:sticky;top:20px}
@@ -24,7 +20,7 @@ body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align
 
 /* Leaderboard */
 .lb-tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
-.lb-tab{padding:3px 8px;border-radius:10px;font-size:.68rem;cursor:pointer;color:#999;background:none;border:none;font-family:inherit;transition:all .2s}
+.lb-tab{padding:3px 8px;border-radius:10px;font-size:.65rem;cursor:pointer;color:#999;background:none;border:none;font-family:inherit;transition:all .2s}
 .lb-tab:hover{background:rgba(0,0,0,0.05)}
 .lb-tab.active{background:#fff;color:#333;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .lb-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:8px;font-size:.72rem;color:#666;margin-bottom:2px}
@@ -34,7 +30,6 @@ body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align
 .lb-item:nth-child(1) .rank{color:#f9a825}
 .lb-item:nth-child(2) .rank{color:#aaa}
 .lb-item:nth-child(3) .rank{color:#b87333}
-.lb-me .lb-item{background:rgba(33,150,243,0.08)}
 .lb-empty{font-size:.72rem;color:#ccc;text-align:center;padding:12px 0}
 
 /* Signature Wall */
@@ -62,47 +57,66 @@ body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align
 .sync-btn{background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:3px 12px;font-size:.78rem;font-family:inherit;color:#999;cursor:pointer;transition:background .2s,color .2s}
 .sync-btn:hover{background:rgba(255,255,255,0.9);color:#555}
 .sync-btn:active{transform:scale(.95)}
-.stats-prefix{font-size:.82rem;color:#999;margin:18px 0 2px;text-align:center}
-.capacity-line{font-size:.75rem;color:#bbb;margin:0 0 8px;text-align:center}
 h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bottom:2px}
 .subtitle{font-size:.9rem;color:#999;margin-bottom:6px}
 .tagline{font-size:.8rem;color:#bbb;font-style:italic;margin-bottom:20px;line-height:1.5;padding:0 8px}
-.toilet-wrapper{position:relative;display:inline-block;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:filter .3s}
-.toilet-wrapper:not(.disabled):not(.flushing):hover{filter:drop-shadow(0 6px 20px rgba(0,0,0,0.12))}
-.toilet-wrapper:not(.disabled):not(.flushing):active svg{transform:scale(.97)}
-.toilet-wrapper.disabled{cursor:not-allowed}
+
+/* Toilet with click zones */
+.toilet-wrapper{position:relative;display:inline-block;-webkit-tap-highlight-color:transparent}
 .toilet-svg{width:210px;height:310px;display:block;transition:transform .1s}
-.toilet-wrapper.clogged .water{fill:#e8744a;transition:fill .5s}
-.toilet-wrapper.clogged .water-highlight{fill:#f0987a;transition:fill .5s}
 .toilet-wrapper.flushing .toilet-svg{animation:shake .55s ease-in-out}
 @keyframes shake{0%,100%{transform:translateX(0)}12%{transform:translateX(-7px) rotate(-1deg)}25%{transform:translateX(7px) rotate(1deg)}37%{transform:translateX(-5px) rotate(-.6deg)}50%{transform:translateX(5px) rotate(.6deg)}62%{transform:translateX(-3px)}75%{transform:translateX(3px)}87%{transform:translateX(-1px)}}
 .toilet-wrapper.flushing .water{animation:swirl .5s ease-in-out}
 .toilet-wrapper.flushing .water-highlight{animation:swirl .5s ease-in-out reverse}
 @keyframes swirl{0%{transform:scale(1,1)}30%{transform:scale(.82,.65)}60%{transform:scale(1.08,.88)}100%{transform:scale(1,1)}}
-.splash-area{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);width:130px;height:110px;pointer-events:none;overflow:visible;z-index:2}
-.drop{position:absolute;bottom:0;left:50%;width:8px;height:10px;border-radius:50% 50% 50% 50%/40% 40% 60% 60%;background:linear-gradient(180deg,#81d4fa,#29b6f6);opacity:0;animation:drop-fly .7s ease-out forwards}
-.drop:nth-child(odd){width:6px;height:8px}
-.drop:nth-child(3n){width:10px;height:12px}
-@keyframes drop-fly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
-.clog-badge{position:absolute;top:-10px;right:-18px;background:#e65100;color:#fff;font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:20px;opacity:0;transform:scale(0);transition:all .4s cubic-bezier(.34,1.56,.64,1);z-index:3;white-space:nowrap}
-.clog-badge.show{opacity:1;transform:scale(1)}
-.status-msg{margin-top:14px;font-size:.95rem;color:#888;min-height:1.6em;transition:color .3s}
+.toilet-wrapper.clogged .water{fill:#e8744a;transition:fill .5s}
+.toilet-wrapper.clogged .water-highlight{fill:#f0987a;transition:fill .5s}
+.toilet-wrapper.pooping .toilet-svg{animation:poop-bounce .4s ease}
+@keyframes poop-bounce{0%{transform:translateY(0)}20%{transform:translateY(-4px)}60%{transform:translateY(2px)}100%{transform:translateY(0)}}
+
+/* Click zones */
+.toilet-hit{position:absolute;z-index:4;border-radius:12px;transition:background .2s}
+.poop-hit{bottom:6px;left:8%;width:84%;height:58%;cursor:pointer}
+.flush-hit{top:20px;left:25%;width:50%;height:30%;cursor:pointer}
+.flush-hit:hover{background:rgba(33,150,243,0.1)}
+.flush-hit:active{background:rgba(33,150,243,0.18)}
+.poop-hit:hover{background:rgba(139,69,19,0.06)}
+.poop-hit:active{background:rgba(139,69,19,0.12)}
+.poop-hit.disabled,.flush-hit.disabled{cursor:not-allowed;background:transparent!important}
+
+/* Hit labels */
+.hit-label{position:absolute;font-size:.6rem;color:#bbb;pointer-events:none;z-index:5;opacity:0;transition:opacity .3s}
+.flush-label{top:50px;left:50%;transform:translateX(-50%)}
+.poop-label{bottom:80px;left:50%;transform:translateX(-50%)}
+.toilet-wrapper:hover .hit-label{opacity:1}
+
+/* Plunger / action buttons row */
+.action-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;min-height:52px}
+.action-btn{cursor:pointer;font-size:28px;line-height:1;background:none;border:none;padding:6px 16px;border-radius:30px;transition:background .2s;display:inline-flex;align-items:center;gap:4px}
+.action-btn:hover{background:rgba(0,0,0,0.05)}
+.action-btn:active{transform:scale(.95)}
+.action-btn.hidden{display:none}
+.action-label{font-size:.82rem;color:#666;font-family:inherit}
+
+/* Poop fill bar */
+.poop-bar-wrap{width:180px;height:12px;background:rgba(0,0,0,0.06);border-radius:10px;margin:10px auto 0;overflow:hidden;position:relative}
+.poop-bar-fill{height:100%;background:linear-gradient(90deg,#8d6e63,#6d4c41);border-radius:10px;transition:width .4s ease;width:0%}
+.poop-bar-text{font-size:.6rem;color:#999;margin-top:2px}
+
+/* Status */
+.status-msg{margin-top:10px;font-size:.95rem;color:#888;min-height:1.6em;transition:color .3s}
 .status-msg.clogged{color:#d84315;font-weight:600}
 .status-msg.flushing{color:#0288d1}
-.plunger-area{margin-top:12px;height:64px;display:flex;align-items:center;justify-content:center}
-.plunger-btn{display:none;cursor:pointer;font-size:38px;line-height:1;background:none;border:none;padding:8px 24px;border-radius:30px;transition:background .2s;animation:plunge-idle 1.4s ease-in-out infinite}
-.plunger-btn:hover{background:rgba(0,0,0,0.05)}
-.plunger-btn.show{display:inline-flex;align-items:center;gap:6px}
-.plunger-btn.working{animation:plunge-work .5s ease-in-out;pointer-events:none}
-.plunger-label{font-size:.85rem;color:#666;font-family:inherit}
-@keyframes plunge-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes plunge-work{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-35px) rotate(-8deg)}40%{transform:translateY(8px) rotate(4deg)}60%{transform:translateY(-20px) rotate(-5deg)}80%{transform:translateY(4px) rotate(2deg)}100%{transform:translateY(0) rotate(0)}}
-.stats{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center}
-.stat-card{background:#fff;border-radius:16px;padding:12px 18px;box-shadow:0 2px 16px rgba(0,0,0,0.06);min-width:110px;flex:1;transition:transform .2s,box-shadow .2s}
+
+/* Stats */
+.stats-prefix{font-size:.82rem;color:#999;margin:16px 0 2px;text-align:center}
+.capacity-line{font-size:.75rem;color:#bbb;margin:0 0 8px;text-align:center}
+.stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+.stat-card{background:#fff;border-radius:14px;padding:10px 14px;box-shadow:0 2px 16px rgba(0,0,0,0.06);min-width:90px;flex:1;transition:transform .2s,box-shadow .2s}
 .stat-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.10)}
-.stat-icon{font-size:22px;margin-bottom:1px}
-.stat-label{font-size:.78rem;color:#999;margin-bottom:2px;white-space:nowrap}
-.stat-value{font-size:1.7rem;font-weight:800;color:#2c2c2c;font-variant-numeric:tabular-nums}
+.stat-icon{font-size:20px;margin-bottom:1px}
+.stat-label{font-size:.72rem;color:#999;margin-bottom:2px;white-space:nowrap}
+.stat-value{font-size:1.5rem;font-weight:800;color:#2c2c2c;font-variant-numeric:tabular-nums}
 .stat-card:nth-child(1) .stat-value{color:#f9a825}
 .stat-card:nth-child(2) .stat-value{color:#1e88e5}
 .stat-card:nth-child(3) .stat-value{color:#e53935}
@@ -111,46 +125,57 @@ h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bott
 .stat-card:nth-child(6) .stat-value{color:#6d4c41}
 .stat-value.bump{animation:bump .25s ease}
 @keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
-.lookback-area{margin-top:6px;height:60px;display:flex;align-items:center;justify-content:center}
-.lookback-btn{cursor:pointer;font-size:34px;line-height:1;background:none;border:none;padding:6px 20px;border-radius:30px;transition:background .2s}
-.lookback-btn:hover{background:rgba(0,0,0,0.05)}
-.lookback-btn:active{transform:scale(.95)}
-.lookback-label{font-size:.85rem;color:#666;font-family:inherit}
-.footer{margin-top:28px;font-size:.7rem;color:#ccc;letter-spacing:.3px}
 
-/* User Modal */
+/* Footer */
+.footer{margin-top:24px;font-size:.7rem;color:#ccc;letter-spacing:.3px}
+
+/* Modals */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:99;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal-box{background:#fff;border-radius:20px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center}
-.modal-title{font-size:1.1rem;font-weight:700;color:#333;margin-bottom:4px}
-.modal-desc{font-size:.82rem;color:#999;margin-bottom:16px}
-.modal-input{width:100%;border:2px solid #eee;border-radius:14px;padding:10px 16px;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s;text-align:center}
+.modal-box{background:#fff;border-radius:20px;padding:24px 28px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center;max-height:80vh;overflow-y:auto}
+.modal-title{font-size:1rem;font-weight:700;color:#333;margin-bottom:4px}
+.modal-desc{font-size:.8rem;color:#999;margin-bottom:12px}
+.modal-input{width:100%;border:2px solid #eee;border-radius:14px;padding:8px 14px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s;text-align:center}
 .modal-input:focus{border-color:#1e88e5}
-.modal-btn{background:#1e88e5;color:#fff;border:none;border-radius:14px;padding:10px 28px;font-size:.9rem;cursor:pointer;font-family:inherit;margin-top:12px;font-weight:600;transition:background .2s}
+.modal-btn{background:#1e88e5;color:#fff;border:none;border-radius:14px;padding:8px 24px;font-size:.85rem;cursor:pointer;font-family:inherit;margin-top:10px;font-weight:600;transition:background .2s}
 .modal-btn:hover{background:#1565c0}
 .modal-btn:active{transform:scale(.97)}
-.modal-hint{font-size:.72rem;color:#bbb;margin-top:10px}
+.modal-close{position:absolute;top:8px;right:12px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999}
+.modal-box{position:relative}
+.modal-hint{font-size:.7rem;color:#bbb;margin-top:8px}
+.gift-user-list{max-height:180px;overflow-y:auto;margin:8px 0;text-align:left}
+.gift-user-item{padding:6px 10px;cursor:pointer;border-radius:8px;font-size:.8rem;color:#555;transition:background .15s}
+.gift-user-item:hover{background:rgba(33,150,243,0.08);color:#1e88e5}
+.gift-user-item.selected{background:rgba(33,150,243,0.12);color:#1e88e5;font-weight:600}
+.gift-separator{font-size:.7rem;color:#ccc;text-align:center;margin:6px 0}
+.gift-preview{font-size:.78rem;color:#888;margin:8px 0}
+.gift-btn{background:#6d4c41;color:#fff;border:none;border-radius:14px;padding:8px 24px;font-size:.85rem;cursor:pointer;font-family:inherit;font-weight:600;transition:background .2s}
+.gift-btn:hover{background:#4e342e}
+.gift-btn:active{transform:scale(.97)}
 
-/* Mobile toggle buttons */
+/* Notification toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:16px;font-size:.85rem;z-index:100;opacity:0;transition:opacity .4s;pointer-events:none;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+
+/* Mobile */
 @media(max-width:900px){
-.side-toggle{display:block!important;position:fixed;width:40px;height:40px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 12px rgba(0,0,0,0.12);cursor:pointer;font-size:1.2rem;z-index:50;transition:transform .2s}
+.panel{position:fixed;top:0;width:280px;height:100%;z-index:90;background:#efe8e0;padding:16px;overflow-y:auto;transform:translateX(-100%);transition:transform .3s ease;box-shadow:2px 0 20px rgba(0,0,0,0.1)}
+.panel.open{transform:translateX(0)}
+.panel-r{right:0;left:auto;transform:translateX(100%)}
+.panel-r.open{transform:translateX(0)}
+.panel-close{display:block!important;position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;z-index:5}
+.side-toggle{display:block!important;position:fixed;width:38px;height:38px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 12px rgba(0,0,0,0.12);cursor:pointer;font-size:1.1rem;z-index:50;transition:transform .2s}
 .side-toggle:active{transform:scale(.9)}
 .side-toggle-l{left:10px;bottom:80px}
 .side-toggle-r{right:10px;bottom:80px}
-.panel{position:fixed;top:0;width:280px;height:100%;z-index:90;background:#efe8e0;padding:16px;overflow-y:auto;transform:translateX(-100%);transition:transform .3s ease;box-shadow:2px 0 20px rgba(0,0,0,0.1)}
-.panel.open{transform:translateX(0)}
-.panel-r{right:0;transform:translateX(100%)}
-.panel-r.open{transform:translateX(0)}
-.panel-l{left:0}
-.panel-close{display:block!important;position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;z-index:5}
 }
-@media(min-width:901px){.panel-close{display:none!important}}
+@media(min-width:901px){.side-toggle,.panel-close{display:none!important}}
+
 @media(max-width:480px){
 h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-bottom:14px}
-.toilet-svg{width:150px;height:230px}.splash-area{bottom:55px;width:100px;height:80px}
-.stat-card{padding:8px 12px;min-width:70px}.stat-value{font-size:1.3rem}.stat-icon{font-size:18px}.stat-label{font-size:.65rem}.stats{gap:8px}
-.plunger-btn,.lookback-btn{font-size:30px}.lookback-btn{padding:4px 14px}
-.stats-prefix{font-size:.72rem;margin:14px 0 4px}
+.toilet-svg{width:150px;height:230px}.stat-card{padding:7px 10px;min-width:65px}.stat-value{font-size:1.2rem}.stat-icon{font-size:17px}.stat-label{font-size:.6rem}.stats{gap:6px}
+.action-btn{font-size:24px;padding:4px 12px}.action-label{font-size:.75rem}
+.poop-bar-wrap{width:140px;height:10px}
 }
 </style>
 </head>
@@ -159,11 +184,11 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
 <div class="app-layout">
   <!-- Left Panel: Leaderboard -->
   <div class="panel panel-l" id="lbPanel">
-    <button class="panel-close" onclick="window.__toggleLB()">✕</button>
+    <button class="panel-close" onclick="__toggleLB()">✕</button>
     <div class="panel-inner">
       <div class="panel-title">
         <span data-l10n="lb_title">🏆 排行榜</span>
-        <button class="panel-toggle" onclick="window.__toggleLB()" data-l10n="lb_collapse">收起</button>
+        <button class="panel-toggle" onclick="__toggleLB()" data-l10n="lb_collapse">收起</button>
       </div>
       <div class="panel-body" id="lbBody">
         <div class="lb-tabs" id="lbTabs"></div>
@@ -175,24 +200,25 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
   <!-- Main Content -->
   <div class="main-content">
     <div class="top-bar">
-      <button class="side-toggle side-toggle-l" onclick="window.__toggleLB()">🏆</button>
+      <button class="side-toggle side-toggle-l" onclick="__toggleLB()">🏆</button>
       <div style="flex:1"></div>
-      <button class="user-btn" id="userBtn" onclick="window.__showUserModal()">👤 登录</button>
+      <button class="user-btn" id="userBtn" onclick="__showUserModal()">👤 登录</button>
       <div class="lang-switch">
-        <span class="lang-opt" data-lang="zh" onclick="window.__toggleLang('zh')">中</span>
+        <span class="lang-opt" data-lang="zh" onclick="__toggleLang('zh')">中</span>
         <span class="lang-sep">|</span>
-        <span class="lang-opt" data-lang="en" onclick="window.__toggleLang('en')">EN</span>
+        <span class="lang-opt" data-lang="en" onclick="__toggleLang('en')">EN</span>
       </div>
-      <button class="sync-btn" onclick="window.__syncStats()" data-l10n="sync_btn">🔄 同步</button>
-      <button class="side-toggle side-toggle-r" onclick="window.__toggleSW()">📝</button>
+      <button class="sync-btn" onclick="__syncStats()" data-l10n="sync_btn">🔄 同步</button>
+      <button class="side-toggle side-toggle-r" onclick="__toggleSW()">📝</button>
     </div>
 
     <h1 id="title" data-l10n="title">💩 赛博厕所</h1>
     <p class="subtitle" id="subtitle" data-l10n="subtitle">带薪拉屎模拟器</p>
     <p class="tagline" id="tagline" data-l10n="tagline">让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎</p>
 
+    <!-- Toilet -->
     <div class="toilet-wrapper" id="toilet">
-      <svg class="toilet-svg" viewBox="0 0 240 350" aria-label="Toilet">
+      <svg class="toilet-svg" viewBox="0 0 240 350">
         <rect x="55" y="28" width="130" height="102" rx="8" fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
         <rect x="48" y="20" width="144" height="18" rx="9" fill="#fff" stroke="#d0d0d0" stroke-width="2"/>
         <rect x="54" y="22" width="132" height="4" rx="2" fill="#f4f4f4"/>
@@ -208,46 +234,54 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
         <circle cx="72" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width=".5"/>
         <circle cx="168" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width=".5"/>
       </svg>
+      <div class="toilet-hit flush-hit" id="flushHit" title="冲水"></div>
+      <div class="toilet-hit poop-hit" id="poopHit" title="拉屎"></div>
+      <div class="hit-label flush-label" data-l10n="hint_flush">🚿 冲水</div>
+      <div class="hit-label poop-label" data-l10n="hint_poop">💩 拉屎</div>
       <div class="splash-area" id="splashArea"></div>
       <div class="clog-badge" id="clogBadge">🧱 <span data-l10n="clog_badge">堵了</span></div>
     </div>
 
-    <div class="status-msg" id="statusMsg" data-l10n="status_default">💡 点击马桶冲水</div>
+    <!-- Poop bar -->
+    <div class="poop-bar-wrap"><div class="poop-bar-fill" id="poopBar"></div></div>
+    <div class="poop-bar-text" id="poopBarText">💩 0L / 15L</div>
 
-    <div class="plunger-area">
-      <button class="plunger-btn" id="plungerBtn"><span>🧹</span><span class="plunger-label" data-l10n="plunger">通一下</span></button>
+    <!-- Status -->
+    <div class="status-msg" id="statusMsg" data-l10n="status_default">💡 点击马桶拉屎，点击水箱冲水</div>
+
+    <!-- Action buttons -->
+    <div class="action-row">
+      <button class="action-btn" id="flushBtn"><span>🚿</span><span class="action-label" data-l10n="flush_btn">冲水</span></button>
+      <button class="action-btn" id="plungerBtn" style="display:none"><span>🧹</span><span class="action-label" data-l10n="plunger">通一下</span></button>
+      <button class="action-btn hidden" id="giftBtn"><span>📦</span><span class="action-label" data-l10n="gift_btn">搬屎</span></button>
     </div>
 
-    <div class="lookback-area">
-      <button class="lookback-btn" id="lookbackBtn"><span>👀</span><span class="lookback-label" data-l10n="lookback">回头看一眼</span></button>
-    </div>
-
+    <!-- Stats -->
     <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
-    <p class="capacity-line" id="capacityLine">💩 0L / 15L</p>
     <div class="stats">
       <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div><div class="stat-value" id="statPeople">0</div></div>
       <div class="stat-card"><div class="stat-icon">🚿</div><div class="stat-label" data-l10n="stat_flushes">冲水次数</div><div class="stat-value" id="statFlushes">0</div></div>
       <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label" data-l10n="stat_clogs">堵马桶次数</div><div class="stat-value" id="statClogs">0</div></div>
       <div class="stat-card"><div class="stat-icon">💦</div><div class="stat-label" data-l10n="stat_overflow_count">漾出次数</div><div class="stat-value" id="statOverflowCount">0</div></div>
-      <div class="stat-card"><div class="stat-icon">💧</div><div class="stat-label" data-l10n="stat_overflow_vol">漾出体积</div><div class="stat-value" id="statOverflowVol">0L</div></div>
-      <div class="stat-card"><div class="stat-icon">👀</div><div class="stat-label" data-l10n="stat_lookbacks">回头看</div><div class="stat-value" id="statLookbacks">0</div></div>
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label" data-l10n="stat_gift_sent">搬屎</div><div class="stat-value" id="statGiftSent">0</div></div>
+      <div class="stat-card"><div class="stat-icon">📪</div><div class="stat-label" data-l10n="stat_gift_recv">被搬</div><div class="stat-value" id="statGiftRecv">0</div></div>
     </div>
     <div class="footer" data-l10n="footer">🚀 Hosted on GitHub Pages</div>
   </div>
 
   <!-- Right Panel: Signature Wall -->
   <div class="panel panel-r" id="swPanel">
-    <button class="panel-close" onclick="window.__toggleSW()">✕</button>
+    <button class="panel-close" onclick="__toggleSW()">✕</button>
     <div class="panel-inner">
       <div class="panel-title">
         <span data-l10n="sw_title">📝 签名墙</span>
-        <button class="panel-toggle" onclick="window.__toggleSW()" data-l10n="sw_collapse">收起</button>
+        <button class="panel-toggle" onclick="__toggleSW()" data-l10n="sw_collapse">收起</button>
       </div>
       <div class="panel-body" id="swBody">
         <div class="sig-list" id="sigList"><div class="lb-empty" data-l10n="lb_loading">加载中...</div></div>
         <div class="sig-input-row">
-          <input class="sig-input" id="sigInput" placeholder="输入ID" maxlength="12" onkeydown="if(event.key==='Enter')window.__addSignature()">
-          <button class="sig-btn" onclick="window.__addSignature()">✚</button>
+          <input class="sig-input" id="sigInput" placeholder="输入ID" maxlength="12" onkeydown="if(event.key==='Enter')__addSignature()">
+          <button class="sig-btn" onclick="__addSignature()">✚</button>
         </div>
       </div>
     </div>
@@ -257,65 +291,83 @@ h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-b
 <!-- User Modal -->
 <div class="modal-overlay" id="userModal">
   <div class="modal-box">
+    <button class="modal-close" onclick="__hideUserModal()">✕</button>
     <div class="modal-title" data-l10n="modal_title">👤 你的ID</div>
     <div class="modal-desc" data-l10n="modal_desc">输入一个ID，你的数据将保存在这个ID下</div>
-    <input class="modal-input" id="modalInput" placeholder="输入ID..." maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')window.__confirmUser()">
-    <button class="modal-btn" onclick="window.__confirmUser()" data-l10n="modal_btn">确认</button>
+    <input class="modal-input" id="modalInput" placeholder="输入ID..." maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')__confirmUser()">
+    <button class="modal-btn" onclick="__confirmUser()" data-l10n="modal_btn">确认</button>
     <div class="modal-hint" data-l10n="modal_hint">同一ID可随时继续刷数据</div>
   </div>
 </div>
+
+<!-- Gift Modal -->
+<div class="modal-overlay" id="giftModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="__hideGiftModal()">✕</button>
+    <div class="modal-title" data-l10n="gift_title">📦 搬屎</div>
+    <div class="modal-desc" data-l10n="gift_desc">选择要搬给谁，或输入自定义ID</div>
+    <div class="gift-preview" id="giftPreview">当前 💩 <span id="giftVol">0</span>L</div>
+    <div class="gift-user-list" id="giftUserList"></div>
+    <div class="gift-separator">— 或自定义 —</div>
+    <input class="modal-input" id="giftInput" placeholder="输入目标ID" maxlength="12" onkeydown="if(event.key==='Enter')__sendGift()">
+    <button class="gift-btn" onclick="__sendGift()" data-l10n="gift_send">📦 搬走</button>
+    <div class="modal-hint" data-l10n="gift_hint">搬过去的屎会在对方登录时显示</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
 (function(){
 'use strict';
 
-// ===== Translations =====
 var L10N={
 zh:{
 title:'💩 赛博厕所',subtitle:'带薪拉屎模拟器',
 tagline:'让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
 stats_prefix:'在你之前已有：',sync_btn:'🔄 同步',
-status_default:'💡 点击马桶冲水',status_flushing:'🚿 冲水中...',
-status_ok:'✅ 冲水成功',status_clogged:'💩 堵了',
+status_default:'💡 点击马桶拉屎，点击水箱冲水',status_flushing:'🚿 冲水中...',
+status_flush_ok:'✅ 冲水成功',status_clogged:'💩 堵了',status_full:'💩 已经被您拉满了！',
+status_pooping:'💩 拉了一坨...',
+status_poop:'拉了 {poop}L 💩，共 {total}L',
+status_overflow:'💦 漾出 +2L水！',
 status_unclogging:'🧹 正在疏通...',status_unclogged:'✅ 通了！',status_unclog_fail:'😰 没通开...',
-status_poop:'拉了 {poop}L 💩',status_overflow:'💦 漾出 +{overflow}L水！拉了 {poop}L 💩',
 status_lookback:'👀 回头看了一眼...',
-lb_normal:'🤷 平平无奇，Nothing special.',
-lb_golden:'🐍 黄金巨蟒！金光闪闪，堪称艺术品！',
-lb_strawberry:'🍓 草...草莓塔？？？你陷入了沉思...',
-stat_people:'带薪拉屎人数',stat_flushes:'冲水次数',stat_clogs:'堵马桶次数',
-stat_overflow_count:'漾出次数',stat_overflow_vol:'漾出体积(L)',
-stat_lookbacks:'回头看次数',capacity_line:'💩 {cur}L / 15L',
-lookback:'回头看一眼',plunger:'通一下',clog_badge:'堵了',
+lb_normal:'🤷 平平无奇',lb_golden:'🐍 黄金巨蟒！金光闪闪！',lb_strawberry:'🍓 草莓塔！！！',
+flushes:'拉屎人数',stat_flushes:'冲水次数',stat_clogs:'堵马桶次数',
+stat_overflow_count:'漾出次数',stat_gift_sent:'搬屎',stat_gift_recv:'被搬',
+lookback:'回头看一眼',plunger:'通一下',flush_btn:'🚿 冲水',gift_btn:'📦 搬屎',clog_badge:'堵了',
+gift_title:'📦 搬屎',gift_desc:'选择要搬给谁',gift_send:'📦 搬走',gift_hint:'会在对方登录时显示',
 footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 排行榜',lb_collapse:'收起',lb_loading:'加载中...',lb_empty:'暂无数据',
-sw_title:'📝 签名墙',sw_collapse:'收起',sw_placeholder:'输入ID',
+hint_flush:'🚿 冲水',hint_poop:'💩 拉屎',
+sw_title:'📝 签名墙',sw_collapse:'收起',
 modal_title:'👤 你的ID',modal_desc:'输入一个ID，你的数据将保存在这个ID下',modal_btn:'确认',modal_hint:'同一ID可随时继续刷数据',
-user_login:'👤 登录',user_logout:'退出',
-lb_tab_flushes:'🚿冲水',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',
+lb_tab_flushes:'🚿冲水',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',lb_tab_gift_sent:'📦搬屎',lb_tab_gift_recv:'📪被搬',
 },
 en:{
 title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
 tagline:'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
 stats_prefix:'Before you:',sync_btn:'🔄 Sync',
-status_default:'💡 Click to flush',status_flushing:'🚿 Flushing...',
-status_ok:'✅ Flush successful',status_clogged:'💩 Clogged',
+status_default:'💡 Click bowl to poop, click tank to flush',
+status_flushing:'🚿 Flushing...',status_flush_ok:'✅ Flush successful',
+status_clogged:'💩 Clogged',status_full:'💩 Full! 15L max!',
+status_pooping:'💩 Pooping...',
+status_poop:'Pooped {poop}L 💩, total {total}L',
+status_overflow:'💦 Overflow +2L!',
 status_unclogging:'🧹 Plunging...',status_unclogged:'✅ Unclogged!',status_unclog_fail:'😰 Try again...',
-status_poop:'Pooped {poop}L 💩',status_overflow:'💦 Overflow +{overflow}L! Pooped {poop}L 💩',
-status_lookback:'👀 Looked back...',
-lb_normal:'🤷 Just a regular poop, nothing special.',
-lb_golden:'🐍 Golden Python! A masterpiece shines before you!',
-lb_strawberry:'🍓 A... Strawberry Tower??? You are deep in thought...',
-stat_people:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
-stat_overflow_count:'Overflows',stat_overflow_vol:'Overflow (L)',
-stat_lookbacks:'Look Backs',capacity_line:'💩 {cur}L / 15L',
-lookback:'Look Back',plunger:'Plunge',clog_badge:'Clogged',
+lb_normal:'🤷 Regular poop',lb_golden:'🐍 Golden Python!',lb_strawberry:'🍓 Strawberry Tower!!!',
+flushes:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
+stat_overflow_count:'Overflows',stat_gift_sent:'Sent',stat_gift_recv:'Received',
+lookback:'Look Back',plunger:'Plunge',flush_btn:'🚿 Flush',gift_btn:'📦 Gift',clog_badge:'Clogged',
+gift_title:'📦 Gift Poop',gift_desc:'Choose a recipient',gift_send:'📦 Send',gift_hint:'They will see it on login',
 footer:'🚀 Hosted on GitHub Pages',
 lb_title:'🏆 Leaderboard',lb_collapse:'Collapse',lb_loading:'Loading...',lb_empty:'No data',
-sw_title:'📝 Signatures',sw_collapse:'Collapse',sw_placeholder:'Enter ID',
-modal_title:'👤 Your ID',modal_desc:'Enter an ID to save your stats under it',modal_btn:'Confirm',modal_hint:'Use the same ID anytime to continue',
-user_login:'👤 Login',user_logout:'Logout',
-lb_tab_flushes:'🚿Flushes',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Strawberry',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Overflow',
+hint_flush:'🚿 Flush',hint_poop:'💩 Poop',
+sw_title:'📝 Signatures',sw_collapse:'Collapse',
+modal_title:'👤 Your ID',modal_desc:'Enter an ID to save your stats',modal_btn:'Confirm',modal_hint:'Use the same ID anytime',
+lb_tab_flushes:'🚿Flush',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Straw',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Over',lb_tab_gift_sent:'📦Send',lb_tab_gift_recv:'📪Recv',
 }
 };
 
@@ -323,27 +375,25 @@ lb_tab_flushes:'🚿Flushes',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓S
 var lang='zh',currentStatusKey='status_default',currentStatusType='';
 var serverPeople=0,serverFlushes=0,serverClogs=0,serverClogged=false;
 var serverPoopVolume=0,serverOverflowCount=0,serverOverflowVolume=0,serverLookBacks=0;
-var CAPACITY=15,isFlushing=false;
-
-// User system
+var CAPACITY=15,isFlushing=false,isPooping=false,isFull=false;
 var myUserId='';
-var usersData={}; // { userId: {flushes,goldenPython,strawberryTower,lookBacks,overflowCount} }
-var userList=[];  // ordered list of user IDs for signature wall
-
-// Leaderboard
+var usersData={},userList=[],poopGifts={};
 var lbCategory='flushes';
-var lbCategories=['flushes','goldenPython','strawberryTower','lookBacks','overflowCount'];
+var lbCategories=['flushes','goldenPython','strawberryTower','lookBacks','overflowCount','giftSentCount','giftRecvCount'];
 
 // DOM refs
-var toiletEl=$('toilet'),splashArea=$('splashArea'),clogBadge=$('clogBadge');
-var statusMsg=$('statusMsg'),plungerBtn=$('plungerBtn'),capacityLine=$('capacityLine');
-var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
-var statOverflowCount=$('statOverflowCount'),statOverflowVol=$('statOverflowVol');
-var statLookbacks=$('statLookbacks'),lookbackBtn=$('lookbackBtn');
-var userBtn=$('userBtn'),userModal=$('userModal'),modalInput=$('modalInput');
-var lbList=$('lbList'),lbBody=$('lbBody'),lbTabs=$('lbTabs');
-var sigList=$('sigList'),sigInput=$('sigInput');
 function $(id){return document.getElementById(id)}
+var toiletEl=$('toilet'),splashArea=$('splashArea'),clogBadge=$('clogBadge');
+var statusMsg=$('statusMsg'),capacityLine=$('capacityLine');
+var flushHit=$('flushHit'),poopHit=$('poopHit'),flushBtn=$('flushBtn'),plungerBtn=$('plungerBtn'),giftBtn=$('giftBtn');
+var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
+var statOverflowCount=$('statOverflowCount'),statLookbacks=$('statLookbacks');
+var statGiftSent=$('statGiftSent'),statGiftRecv=$('statGiftRecv');
+var userBtn=$('userBtn'),userModal=$('userModal'),modalInput=$('modalInput');
+var lbList=$('lbList'),lbTabs=$('lbTabs');
+var sigList=$('sigList'),sigInput=$('sigInput');
+var giftModal=$('giftModal'),giftInput=$('giftInput'),giftUserList=$('giftUserList'),giftVol=$('giftVol');
+var poopBar=$('poopBar'),poopBarText=$('poopBarText'),toast=$('toast');
 
 // ===== Language =====
 function t(k){return(L10N[lang]&&L10N[lang][k])||L10N.zh[k]||k}
@@ -356,24 +406,21 @@ restoreStatus();renderLB();renderSW()
 function restoreStatus(){statusMsg.textContent=t(currentStatusKey);statusMsg.className='status-msg'+(currentStatusType?' '+currentStatusType:'')}
 function detectLang(){var s=localStorage.getItem('ct-lang');if(s==='zh'||s==='en')return s;return(navigator.language||navigator.userLanguage||'zh').toLowerCase().indexOf('zh')===0?'zh':'en'}
 function toggleLang(to){if(to===lang)return;lang=to;localStorage.setItem('ct-lang',lang);applyLanguage()}
-window.__toggleLang=toggleLang;
 
-// ===== User System =====
+// ===== User =====
 function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();updateUserBtn()}}
 function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);updateUserBtn()}
-function updateUserBtn(){if(myUserId){userBtn.textContent='👤 '+myUserId;userBtn.classList.add('active')}else{userBtn.textContent=t('user_login');userBtn.classList.remove('active')}}
-window.__showUserModal=function(){userModal.classList.add('show');modalInput.value=myUserId;modalInput.focus();modalInput.select()};
-window.__confirmUser=function(){
-var id=modalInput.value.trim();
-if(!id||id.length<1)return;
-if(id.length>12)id=id.slice(0,12);
-saveUser(id);
-userModal.classList.remove('show');
-// If new user, add to userList
-if(userList.indexOf(id)===-1){userList.push(id);userList.sort();syncToGist()}
-};
-// Auto-show modal on first visit
-if(!localStorage.getItem('ct-user')){setTimeout(function(){window.__showUserModal()},500)}
+function updateUserBtn(){if(myUserId){userBtn.textContent='👤 '+myUserId;userBtn.classList.add('active')}else{userBtn.textContent='👤 '+(lang==='zh'?'登录':'Login');userBtn.classList.remove('active')}}
+function __showUserModal(){userModal.classList.add('show');modalInput.value=myUserId||'';modalInput.focus();modalInput.select()}
+function __hideUserModal(){userModal.classList.remove('show')}
+function __confirmUser(){
+var id=modalInput.value.trim();if(!id||id.length<1)return;if(id.length>12)id=id.slice(0,12);
+var isNew=!myUserId||userList.indexOf(id)===-1;
+saveUser(id);__hideUserModal();
+if(isNew){if(userList.indexOf(id)===-1){userList.push(id);userList.sort()}syncToGist()}
+// Check for gift notifications
+checkGiftNotifications()
+}
 
 // ===== Gist =====
 var GIST_ID='432d134d33e8b3fe5e4d7ef463fb5f5e';
@@ -385,67 +432,197 @@ return fetch(GIST_API,{headers:{Authorization:'token '+GIST_TOKEN}})
 .then(function(r){return r.json()})
 .then(function(data){
 var raw;try{raw=JSON.parse(data.files['stats.json'].content)}catch(e){return}
-// Support old flat format
-if(typeof raw.people==='number'&&raw.global===undefined){raw={global:raw,users:{},userList:[]}}
+if(typeof raw.people==='number'&&raw.global===undefined)raw={global:raw,users:{},userList:[],poopGifts:{}};
 var g=raw.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
-serverPoopVolume=g.poopVolume||0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
-usersData=raw.users||{};userList=raw.userList||[];
-if(userList.indexOf(myUserId)===-1&&myUserId){userList.push(myUserId);userList.sort()}
-updateStatsUI();updateCloggedUI();renderLB();renderSW();
+serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
+usersData=raw.users||{};userList=raw.userList||[];poopGifts=raw.poopGifts||{};
+if(myUserId&&userList.indexOf(myUserId)===-1){userList.push(myUserId);userList.sort()}
+updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();checkGiftNotifications();
 if(!serverClogged&&(currentStatusKey==='status_clogged'||currentStatusKey==='status_unclog_fail'))setStatus('status_default','');
 }).catch(function(e){console.warn('Gist fetch:',e)})
 }
 
 function syncToGist(){
-return fetch(GIST_API,{method:'PATCH',headers:{Authorization:'token '+GIST_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({files:{'stats.json':{content:JSON.stringify({global:{people:serverPeople,flushes:serverFlushes,clogs:serverClogs,clogged:serverClogged,poopVolume:serverPoopVolume,overflowCount:serverOverflowCount,overflowVolume:serverOverflowVolume,lookBacks:serverLookBacks},users:usersData,userList:userList})}}})})
+return fetch(GIST_API,{method:'PATCH',headers:{Authorization:'token '+GIST_TOKEN,'Content-Type':'application/json'},
+body:JSON.stringify({files:{'stats.json':{content:JSON.stringify({
+global:{people:serverPeople,flushes:serverFlushes,clogs:serverClogs,clogged:serverClogged,
+poopVolume:serverPoopVolume,overflowCount:serverOverflowCount,overflowVolume:serverOverflowVolume,lookBacks:serverLookBacks},
+users:usersData,userList:userList,poopGifts:poopGifts})}}})})
 .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
 .then(function(data){
 var s;try{s=JSON.parse(data.files['stats.json'].content)}catch(e){throw new Error('parse')}
 var g=s.global||{};
 serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
-serverPoopVolume=g.poopVolume||0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
-usersData=s.users||{};userList=s.userList||[];
-updateStatsUI();updateCloggedUI();renderLB();renderSW();
+serverPoopVolume=0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
+usersData=s.users||{};userList=s.userList||[];poopGifts=s.poopGifts||{};
+updateStatsUI();updateCloggedUI();updatePoopUI();renderLB();renderSW();
 }).catch(function(e){console.warn('Gist sync:',e);setStatus('status_sync_err','clogged')})
 }
 
-function getMyUserData(){if(!myUserId)return null;if(!usersData[myUserId])usersData[myUserId]={flushes:0,goldenPython:0,strawberryTower:0,lookBacks:0,overflowCount:0};return usersData[myUserId]}
-function incMyUserStat(key){var d=getMyUserData();if(!d)return;d[key]=(d[key]||0)+1;syncToGist()}
+function getMyUserData(){
+if(!myUserId)return null;
+if(!usersData[myUserId])usersData[myUserId]={flushes:0,goldenPython:0,strawberryTower:0,lookBacks:0,overflowCount:0,giftSentCount:0,giftSentVol:0,giftRecvCount:0,giftRecvVol:0};
+return usersData[myUserId]
+}
 
-window.__syncStats=function(){setStatus('status_syncing','flushing');fetchStats().then(function(){if(currentStatusKey==='status_syncing')setStatus('status_default','')})};
+function __syncStats(){setStatus('status_syncing','flushing');fetchStats().then(function(){if(currentStatusKey==='status_syncing')setStatus('status_default','')})}
+
+// ===== Gifts =====
+function checkGiftNotifications(){
+if(!myUserId||!poopGifts[myUserId]||poopGifts[myUserId].length===0)return;
+var gifts=poopGifts[myUserId];var total=0;
+gifts.forEach(function(g){total+=g.volume});
+var msg=(lang==='zh'?'你收到了来自 '+'📦 被搬了 '+total.toFixed(1)+'L 💩！'
+:'📦 Received '+total.toFixed(1)+'L 💩 from '+(gifts[0]?gifts[0].from:'')+(gifts.length>1?' +'+(gifts.length-1)+' more':''));
+showToast(msg);
+// Clear after showing
+delete poopGifts[myUserId];
+syncToGist();
+// Update user stats
+var d=getMyUserData();if(d){
+gifts.forEach(function(g){
+d.giftRecvCount=(d.giftRecvCount||0)+1;
+d.giftRecvVol=(d.giftRecvVol||0)+g.volume;
+});
+updateStatsUI();renderLB()
+}
+}
+function __sendGift(){
+var target=giftInput.value.trim();if(!target||target.length<1)return;
+if(target===myUserId){showToast(lang==='zh'?'不能搬给自己':'Cannot gift to yourself');return}
+if(target.length>12)target=target.slice(0,12);
+var vol=parseFloat(serverPoopVolume.toFixed(1));
+if(vol<=0){showToast(lang==='zh'?'没有屎可搬':'Nothing to gift');return}
+if(!poopGifts[target])poopGifts[target]=[];
+poopGifts[target].push({from:myUserId,volume:vol,time:Date.now()});
+// Add to user list
+if(userList.indexOf(target)===-1){userList.push(target);userList.sort()}
+// Update sender stats
+var d=getMyUserData();if(d){d.giftSentCount=(d.giftSentCount||0)+1;d.giftSentVol=(d.giftSentVol||0)+vol}
+serverPoopVolume=0;updatePoopUI();updateStatsUI();renderLB();renderSW();__hideGiftModal();
+syncToGist();
+showToast((lang==='zh'?'✅ 搬了 '+vol.toFixed(1)+'L 给 '+target:'✅ Sent '+vol.toFixed(1)+'L to '+target));
+}
+function __showGiftModal(){
+if(serverPoopVolume<=0&&!isFull){showToast(lang==='zh'?'先拉屎再搬':'Poop first!');return}
+giftVol.textContent=serverPoopVolume.toFixed(1);
+var list=userList.filter(function(id){return id!==myUserId});
+giftUserList.innerHTML='';
+list.forEach(function(id){
+var div=document.createElement('div');div.className='gift-user-item';div.textContent=id;
+div.onclick=function(){giftInput.value=id;giftInput.focus()};
+giftUserList.appendChild(div)
+});
+giftInput.value='';giftModal.classList.add('show')
+}
+function __hideGiftModal(){giftModal.classList.remove('show')}
+
+// ===== Toast =====
+function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(function(){toast.classList.remove('show')},4000)}
 
 // ===== UI Updates =====
 function updateStatsUI(){
 statPeople.textContent=serverPeople;statFlushes.textContent=serverFlushes;statClogs.textContent=serverClogs;
-statOverflowCount.textContent=serverOverflowCount;statOverflowVol.textContent=serverOverflowVolume+'L';
-statLookbacks.textContent=serverLookBacks;
-capacityLine.textContent='💩 '+Math.min(serverPoopVolume,CAPACITY).toFixed(1)+'L / '+CAPACITY+'L'
+statOverflowCount.textContent=serverOverflowCount;statLookbacks.textContent=serverLookBacks;
+var d=getMyUserData();
+statGiftSent.textContent=d?(d.giftSentCount||0):0;
+statGiftRecv.textContent=d?(d.giftRecvCount||0):0
+}
+function updatePoopUI(){
+var pct=Math.min(serverPoopVolume/CAPACITY*100,100);
+poopBar.style.width=pct+'%';
+poopBarText.textContent='💩 '+serverPoopVolume.toFixed(1)+'L / '+CAPACITY+'L';
+giftBtn.classList.toggle('hidden',serverPoopVolume<=0);
+isFull=serverPoopVolume>=CAPACITY
 }
 function bumpStat(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
 function setStatus(key,type){currentStatusKey=key;currentStatusType=type||'';statusMsg.textContent=t(key);statusMsg.className='status-msg'+(type?' '+type:'')}
 function updateCloggedUI(){
-if(serverClogged){toiletEl.classList.add('clogged');clogBadge.classList.add('show');plungerBtn.classList.add('show')}
-else{toiletEl.classList.remove('clogged');clogBadge.classList.remove('show');plungerBtn.classList.remove('show')}
+if(serverClogged){toiletEl.classList.add('clogged');clogBadge.classList.add('show');plungerBtn.style.display=''}
+else{toiletEl.classList.remove('clogged');clogBadge.classList.remove('show');plungerBtn.style.display='none'}
 }
 
 // ===== Splash =====
 function createSplash(){
-var count=14+Math.floor(Math.random()*8);
+var count=10+Math.floor(Math.random()*6);
 for(var i=0;i<count;i++){
 var drop=document.createElement('div');drop.className='drop';
-var angle=-30+Math.random()*60,dist=40+Math.random()*80,rad=angle*Math.PI/180;
-drop.style.setProperty('--dx',(Math.sin(rad)*dist)+'px');drop.style.setProperty('--dy',(-Math.cos(rad)*dist-20)+'px');
-drop.style.left=(Math.random()*60-30)+'px';drop.style.animationDelay=(Math.random()*0.15)+'s';drop.style.animationDuration=(0.5+Math.random()*0.3)+'s';
-splashArea.appendChild(drop);setTimeout(function(){drop.remove()},1000)
+var angle=-30+Math.random()*60,dist=30+Math.random()*60,rad=angle*Math.PI/180;
+drop.style.setProperty('--dx',(Math.sin(rad)*dist)+'px');drop.style.setProperty('--dy',(-Math.cos(rad)*dist-10)+'px');
+drop.style.left=(Math.random()*50-25)+'px';drop.style.animationDelay=(Math.random()*0.12)+'s';drop.style.animationDuration=(0.4+Math.random()*0.3)+'s';
+splashArea.appendChild(drop);setTimeout(function(){drop.remove()},800)
 }
+}
+
+// ===== Poop =====
+function handlePoop(){
+if(isPooping||serverClogged)return;
+if(isFull){setStatus('status_full','clogged');return}
+isPooping=true;toiletEl.classList.add('pooping');
+setTimeout(function(){
+toiletEl.classList.remove('pooping');isPooping=false;
+var poop=parseFloat((Math.random()*2.9+0.1).toFixed(1));
+serverPoopVolume=Math.min(serverPoopVolume+poop,CAPACITY);
+updatePoopUI();
+statusMsg.textContent=t('status_poop').replace('{poop}',poop.toFixed(1)).replace('{total}',serverPoopVolume.toFixed(1));
+statusMsg.className='status-msg';
+if(serverPoopVolume>=CAPACITY){setStatus('status_full','clogged')}
+},300)
+}
+
+// ===== Flush =====
+function handleFlush(){
+if(isFlushing)return;
+if(serverClogged){
+// Overflow when clogged
+isFlushing=true;toiletEl.classList.add('flushing');createSplash();
+setTimeout(function(){
+toiletEl.classList.remove('flushing');isFlushing=false;
+serverOverflowCount++;serverOverflowVolume+=2;
+setStatus('status_overflow','clogged');
+updateStatsUI();
+if(myUserId){var d=getMyUserData();if(d){d.overflowCount=(d.overflowCount||0)+1}}
+syncToGist()
+},550);
+return
+}
+if(serverPoopVolume<=0){
+// Nothing to flush
+statusMsg.textContent=lang==='zh'?'💡 还没有屎，先拉再冲':'💡 Poop first!';statusMsg.className='status-msg';
+return
+}
+isFlushing=true;toiletEl.classList.add('flushing');createSplash();
+setTimeout(function(){
+toiletEl.classList.remove('flushing');isFlushing=false;
+serverPeople++;serverFlushes++;
+var cleared=serverPoopVolume;serverPoopVolume=0;
+updatePoopUI();updateStatsUI();bumpStat(statPeople);bumpStat(statFlushes);
+setStatus('status_flush_ok','');
+if(myUserId){
+var d=getMyUserData();if(d){d.flushes=(d.flushes||0)+1}
+}
+// Clog check
+if(Math.random()<0.18){serverClogged=true;serverClogs++;updateCloggedUI();updateStatsUI();bumpStat(statClogs)}
+syncToGist()
+},550)
+}
+
+// ===== Plunger =====
+function handlePlunge(){
+if(plungerBtn.classList.contains('working'))return;
+plungerBtn.classList.add('working');setStatus('status_unclogging','flushing');
+setTimeout(function(){
+plungerBtn.classList.remove('working');
+if(Math.random()<0.75){serverClogged=false;updateCloggedUI();syncToGist();setStatus('status_unclogged','')}
+else{setStatus('status_unclog_fail','clogged')}
+},600)
 }
 
 // ===== Leaderboard =====
 function renderLBTabs(){
 lbTabs.innerHTML='';
-var keys=['flushes','goldenPython','strawberryTower','lookBacks','overflowCount'];
-var labels=['lb_tab_flushes','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows'];
+var keys=lbCategories,labels=['lb_tab_flushes','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows','lb_tab_gift_sent','lb_tab_gift_recv'];
 keys.forEach(function(k,i){
 var btn=document.createElement('button');btn.className='lb-tab'+(k===lbCategory?' active':'');btn.textContent=t(labels[i]);
 btn.onclick=function(){lbCategory=k;renderLBTabs();renderLBList()};
@@ -463,6 +640,8 @@ else if(lbCategory==='goldenPython')val=d.goldenPython||0;
 else if(lbCategory==='strawberryTower')val=d.strawberryTower||0;
 else if(lbCategory==='lookBacks')val=d.lookBacks||0;
 else if(lbCategory==='overflowCount')val=d.overflowCount||0;
+else if(lbCategory==='giftSentCount')val=d.giftSentCount||0;
+else if(lbCategory==='giftRecvCount')val=d.giftRecvCount||0;
 if(val>0)entries.push({id:id,val:val})
 });
 entries.sort(function(a,b){return b.val-a.val});
@@ -476,11 +655,7 @@ lbList.appendChild(div)
 })
 }
 function renderLB(){renderLBTabs();renderLBList()}
-window.__toggleLB=function(){
-var p=$('lbPanel');
-if(window.innerWidth<=900){p.classList.toggle('open')}
-else{p.classList.toggle('collapsed');document.querySelector('#lbBody').style.display=p.classList.contains('collapsed')?'none':''}
-};
+function __toggleLB(){var p=$('lbPanel');if(window.innerWidth<=900){p.classList.toggle('open')}else{p.classList.toggle('collapsed');$('lbBody').style.display=p.classList.contains('collapsed')?'none':''}}
 
 // ===== Signature Wall =====
 function renderSW(){
@@ -491,76 +666,30 @@ var div=document.createElement('div');div.className='sig-item';if(id===myUserId)
 div.textContent=id;sigList.appendChild(div)
 })
 }
-window.__toggleSW=function(){
-var p=$('swPanel');
-if(window.innerWidth<=900){p.classList.toggle('open')}
-else{p.classList.toggle('collapsed');document.querySelector('#swBody').style.display=p.classList.contains('collapsed')?'none':''}
-};
-window.__addSignature=function(){
+function __toggleSW(){var p=$('swPanel');if(window.innerWidth<=900){p.classList.toggle('open')}else{p.classList.toggle('collapsed');$('swBody').style.display=p.classList.contains('collapsed')?'none':''}}
+function __addSignature(){
 var id=sigInput.value.trim();if(!id||id.length<1)return;
 if(id.length>12)id=id.slice(0,12);
 if(userList.indexOf(id)===-1){userList.push(id);userList.sort();syncToGist()}
-sigInput.value='';
-renderSW()
-};
-
-// ===== Event Handlers =====
-function handleFlush(){
-if(isFlushing)return;
-isFlushing=true;toiletEl.classList.add('flushing');setStatus('status_flushing','flushing');createSplash();
-setTimeout(function(){
-toiletEl.classList.remove('flushing');isFlushing=false;
-serverPeople++;serverFlushes++;
-var poop=parseFloat((Math.random()*2.9+0.1).toFixed(1));serverPoopVolume=Math.min(serverPoopVolume+poop,CAPACITY);
-if(serverClogged){
-serverOverflowCount++;serverOverflowVolume+=2;bumpStat(statOverflowCount);bumpStat(statOverflowVol);
-statusMsg.textContent=t('status_overflow').replace('{poop}',poop.toFixed(1)).replace('{overflow}','2');
-statusMsg.className='status-msg clogged';
-if(myUserId){incMyUserStat('overflowCount')}
-}else{
-statusMsg.textContent=t('status_poop').replace('{poop}',poop.toFixed(1));statusMsg.className='status-msg';
-serverPoopVolume=0
-}
-updateStatsUI();bumpStat(statPeople);bumpStat(statFlushes);
-if(myUserId){incMyUserStat('flushes')}
-if(!serverClogged&&Math.random()<0.18){serverClogged=true;serverClogs++;updateCloggedUI();updateStatsUI();bumpStat(statClogs)}
-syncToGist()
-},650)
-}
-
-function handlePlunge(){
-if(plungerBtn.classList.contains('working'))return;
-plungerBtn.classList.add('working');setStatus('status_unclogging','flushing');
-setTimeout(function(){
-plungerBtn.classList.remove('working');
-if(Math.random()<0.75){serverClogged=false;updateCloggedUI();syncToGist();setStatus('status_unclogged','')}
-else{setStatus('status_unclog_fail','clogged')}
-},600)
-}
-
-function handleLookBack(){
-var roll=Math.random()*100,resultKey;
-if(roll<90)resultKey='lb_normal';
-else if(roll<98)resultKey='lb_golden';
-else resultKey='lb_strawberry';
-serverLookBacks++;updateStatsUI();bumpStat(statLookbacks);setStatus('status_lookback','flushing');
-if(myUserId){
-var d=getMyUserData();if(d){
-d.lookBacks=(d.lookBacks||0)+1;
-if(resultKey==='lb_golden')d.goldenPython=(d.goldenPython||0)+1;
-if(resultKey==='lb_strawberry')d.strawberryTower=(d.strawberryTower||0)+1;
-}
-}
-setTimeout(function(){statusMsg.textContent=t(resultKey);statusMsg.className='status-msg'},400);
-setTimeout(function(){renderLB()},500);
-syncToGist()
+sigInput.value='';renderSW()
 }
 
 // ===== Init =====
 lang=detectLang();applyLanguage();loadUser();updateUserBtn();fetchStats();
-toiletEl.addEventListener('click',handleFlush);plungerBtn.addEventListener('click',handlePlunge);
-lookbackBtn.addEventListener('click',handleLookBack);
-document.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){handleFlush();e.preventDefault()}});
+
+// Event wiring
+poopHit.addEventListener('click',handlePoop);
+flushHit.addEventListener('click',handleFlush);
+flushBtn.addEventListener('click',handleFlush);
+plungerBtn.addEventListener('click',handlePlunge);
+giftBtn.addEventListener('click',__showGiftModal);
+
+document.addEventListener('keydown',function(e){
+if(e.key===' '||e.key==='Enter'){handleFlush();e.preventDefault()}
+if(e.key==='p'||e.key==='P'){handlePoop();e.preventDefault()}
+if(e.key==='g'||e.key==='G'){__showGiftModal();e.preventDefault()}
+});
+
 if(!serverClogged)setStatus('status_default','');
 
 })();
