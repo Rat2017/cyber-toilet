@@ -693,9 +693,10 @@ lbTabs.appendChild(btn)
 function renderLBList(){
 lbList.innerHTML='';
 var entries=[];
-Object.keys(usersData).forEach(function(id){
-var d=usersData[id];if(!d)return;
+userList.forEach(function(id){
+var d=usersData[id];
 var val=0;
+if(!d){entries.push({id:id,val:0});return}
 if(lbCategory==='flushes')val=d.flushes||0;
 else if(lbCategory==='clogs')val=d.clogs||0;
 else if(lbCategory==='goldenPython')val=d.goldenPython||0;
@@ -704,7 +705,7 @@ else if(lbCategory==='lookBacks')val=d.lookBacks||0;
 else if(lbCategory==='overflowCount')val=d.overflowCount||0;
 else if(lbCategory==='giftSentCount')val=d.giftSentCount||0;
 else if(lbCategory==='giftRecvCount')val=d.giftRecvCount||0;
-if(val>0)entries.push({id:id,val:val})
+entries.push({id:id,val:val})
 });
 entries.sort(function(a,b){return b.val-a.val});
 if(entries.length===0){lbList.innerHTML='<div class="lb-empty">'+t('lb_empty')+'</div>';return}
