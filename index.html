@@ -583,7 +583,7 @@ splashArea.appendChild(drop);setTimeout(function(){drop.remove()},800)
 
 // ===== Poop =====
 function handlePoop(){
-if(isPooping||serverClogged)return;
+if(isPooping||serverClogged||isFlushing)return;
 if(isFull){setStatus('status_full','clogged');return}
 isPooping=true;toiletEl.classList.add('pooping');
 setTimeout(function(){
@@ -600,7 +600,7 @@ if(serverPoopVolume>=CAPACITY){setStatus('status_full','clogged')}
 
 // ===== Flush =====
 function handleFlush(){
-if(isFlushing)return;
+if(isFlushing||isPooping)return;
 if(serverClogged){
 // Overflow when clogged
 canLookBack=false;lookbackBtn.classList.add('hidden');
