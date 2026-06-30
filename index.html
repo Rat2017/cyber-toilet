@@ -1,892 +1,567 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-l10n="title">&#x1F4A9; Cyber Toilet</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-l10n="title">💩 Cyber Toilet</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#efe8e0;background-image:linear-gradient(90deg,rgba(180,165,150,0.12) 1px,transparent 1px),linear-gradient(rgba(180,165,150,0.12) 1px,transparent 1px);background-size:48px 48px;font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;user-select:none;padding:20px}
+.app-layout{display:flex;gap:20px;max-width:1100px;width:100%;align-items:flex-start;justify-content:center}
+.side-toggle{display:none}
+@media(max-width:900px){.app-layout{flex-direction:column;align-items:center}}
+@media(min-width:901px){.side-toggle{display:none!important}}
 
-    body {
-      min-height: 100vh; min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #efe8e0;
-      background-image:
-        linear-gradient(90deg, rgba(180, 165, 150, 0.12) 1px, transparent 1px),
-        linear-gradient(rgba(180, 165, 150, 0.12) 1px, transparent 1px);
-      background-size: 48px 48px;
-      font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      user-select: none;
-      padding: 20px;
-    }
+/* Panels */
+.panel{width:240px;flex-shrink:0;text-align:left;position:sticky;top:20px}
+.panel-inner{background:rgba(255,255,255,0.7);border-radius:16px;padding:14px;box-shadow:0 2px 16px rgba(0,0,0,0.06)}
+.panel-title{font-size:.82rem;font-weight:700;color:#555;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.panel-toggle{cursor:pointer;color:#bbb;font-size:.75rem;background:none;border:none;font-family:inherit;padding:2px 8px;border-radius:10px}
+.panel-toggle:hover{background:rgba(0,0,0,0.05);color:#888}
+.panel.collapsed .panel-body{display:none}
 
-    .container {
-      text-align: center;
-      max-width: 520px;
-      width: 100%;
-      position: relative;
-    }
+/* Leaderboard */
+.lb-tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.lb-tab{padding:3px 8px;border-radius:10px;font-size:.68rem;cursor:pointer;color:#999;background:none;border:none;font-family:inherit;transition:all .2s}
+.lb-tab:hover{background:rgba(0,0,0,0.05)}
+.lb-tab.active{background:#fff;color:#333;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.lb-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:8px;font-size:.72rem;color:#666;margin-bottom:2px}
+.lb-item .rank{font-weight:700;color:#999;width:18px;font-size:.68rem}
+.lb-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-item .val{font-weight:700;color:#333;font-size:.75rem}
+.lb-item:nth-child(1) .rank{color:#f9a825}
+.lb-item:nth-child(2) .rank{color:#aaa}
+.lb-item:nth-child(3) .rank{color:#b87333}
+.lb-me .lb-item{background:rgba(33,150,243,0.08)}
+.lb-empty{font-size:.72rem;color:#ccc;text-align:center;padding:12px 0}
 
-    /* ===== Language switcher ===== */
-    .top-bar {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .lang-switch {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255,255,255,0.6);
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 0.8rem;
-    }
-    .lang-opt {
-      cursor: pointer;
-      color: #bbb;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    .lang-opt:hover { color: #888; }
-    .lang-opt.active { color: #2c2c2c; font-weight: 700; cursor: default; }
-    .lang-sep { color: #ddd; font-size: 0.7rem; }
-    .sync-btn {
-      background: rgba(255,255,255,0.6);
-      border: none;
-      border-radius: 20px;
-      padding: 3px 12px;
-      margin-left: 8px;
-      font-size: 0.78rem;
-      font-family: inherit;
-      color: #999;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    .sync-btn:hover { background: rgba(255,255,255,0.9); color: #555; }
-    .sync-btn:active { transform: scale(0.95); }
+/* Signature Wall */
+.sig-list{max-height:280px;overflow-y:auto}
+.sig-item{font-size:.72rem;padding:3px 6px;color:#888;border-bottom:1px solid rgba(0,0,0,0.04)}
+.sig-item:last-child{border:none}
+.sig-item.me{color:#1e88e5;font-weight:600}
+.sig-input-row{display:flex;gap:4px;margin-top:8px}
+.sig-input{flex:1;border:1px solid #ddd;border-radius:12px;padding:5px 10px;font-size:.72rem;font-family:inherit;outline:none;background:#fff}
+.sig-input:focus{border-color:#1e88e5}
+.sig-btn{background:#1e88e5;color:#fff;border:none;border-radius:12px;padding:5px 12px;font-size:.72rem;cursor:pointer;font-family:inherit}
+.sig-btn:hover{background:#1565c0}
 
-    /* ===== Stats prefix ===== */
-    .stats-prefix {
-      font-size: 0.82rem;
-      color: #999;
-      margin: 18px 0 2px;
-      text-align: center;
-    }
-    .capacity-line {
-      font-size: 0.75rem;
-      color: #bbb;
-      margin: 0 0 8px;
-      text-align: center;
-    }
+/* Main Content */
+.main-content{width:100%;max-width:520px;text-align:center}
+.top-bar{display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px;gap:6px}
+.lang-switch{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.6);border-radius:20px;padding:3px 10px;font-size:.8rem}
+.lang-opt{cursor:pointer;color:#bbb;font-weight:500;transition:color .2s}
+.lang-opt:hover{color:#888}
+.lang-opt.active{color:#2c2c2c;font-weight:700;cursor:default}
+.lang-sep{color:#ddd;font-size:.7rem}
+.user-btn{cursor:pointer;background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:3px 12px;font-size:.78rem;font-family:inherit;color:#999;transition:background .2s,color .2s}
+.user-btn:hover{background:rgba(255,255,255,0.9);color:#555}
+.user-btn.active{color:#1e88e5;font-weight:600}
+.sync-btn{background:rgba(255,255,255,0.6);border:none;border-radius:20px;padding:3px 12px;font-size:.78rem;font-family:inherit;color:#999;cursor:pointer;transition:background .2s,color .2s}
+.sync-btn:hover{background:rgba(255,255,255,0.9);color:#555}
+.sync-btn:active{transform:scale(.95)}
+.stats-prefix{font-size:.82rem;color:#999;margin:18px 0 2px;text-align:center}
+.capacity-line{font-size:.75rem;color:#bbb;margin:0 0 8px;text-align:center}
+h1{font-size:2.2rem;color:#2c2c2c;font-weight:800;letter-spacing:2px;margin-bottom:2px}
+.subtitle{font-size:.9rem;color:#999;margin-bottom:6px}
+.tagline{font-size:.8rem;color:#bbb;font-style:italic;margin-bottom:20px;line-height:1.5;padding:0 8px}
+.toilet-wrapper{position:relative;display:inline-block;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:filter .3s}
+.toilet-wrapper:not(.disabled):not(.flushing):hover{filter:drop-shadow(0 6px 20px rgba(0,0,0,0.12))}
+.toilet-wrapper:not(.disabled):not(.flushing):active svg{transform:scale(.97)}
+.toilet-wrapper.disabled{cursor:not-allowed}
+.toilet-svg{width:210px;height:310px;display:block;transition:transform .1s}
+.toilet-wrapper.clogged .water{fill:#e8744a;transition:fill .5s}
+.toilet-wrapper.clogged .water-highlight{fill:#f0987a;transition:fill .5s}
+.toilet-wrapper.flushing .toilet-svg{animation:shake .55s ease-in-out}
+@keyframes shake{0%,100%{transform:translateX(0)}12%{transform:translateX(-7px) rotate(-1deg)}25%{transform:translateX(7px) rotate(1deg)}37%{transform:translateX(-5px) rotate(-.6deg)}50%{transform:translateX(5px) rotate(.6deg)}62%{transform:translateX(-3px)}75%{transform:translateX(3px)}87%{transform:translateX(-1px)}}
+.toilet-wrapper.flushing .water{animation:swirl .5s ease-in-out}
+.toilet-wrapper.flushing .water-highlight{animation:swirl .5s ease-in-out reverse}
+@keyframes swirl{0%{transform:scale(1,1)}30%{transform:scale(.82,.65)}60%{transform:scale(1.08,.88)}100%{transform:scale(1,1)}}
+.splash-area{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);width:130px;height:110px;pointer-events:none;overflow:visible;z-index:2}
+.drop{position:absolute;bottom:0;left:50%;width:8px;height:10px;border-radius:50% 50% 50% 50%/40% 40% 60% 60%;background:linear-gradient(180deg,#81d4fa,#29b6f6);opacity:0;animation:drop-fly .7s ease-out forwards}
+.drop:nth-child(odd){width:6px;height:8px}
+.drop:nth-child(3n){width:10px;height:12px}
+@keyframes drop-fly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
+.clog-badge{position:absolute;top:-10px;right:-18px;background:#e65100;color:#fff;font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:20px;opacity:0;transform:scale(0);transition:all .4s cubic-bezier(.34,1.56,.64,1);z-index:3;white-space:nowrap}
+.clog-badge.show{opacity:1;transform:scale(1)}
+.status-msg{margin-top:14px;font-size:.95rem;color:#888;min-height:1.6em;transition:color .3s}
+.status-msg.clogged{color:#d84315;font-weight:600}
+.status-msg.flushing{color:#0288d1}
+.plunger-area{margin-top:12px;height:64px;display:flex;align-items:center;justify-content:center}
+.plunger-btn{display:none;cursor:pointer;font-size:38px;line-height:1;background:none;border:none;padding:8px 24px;border-radius:30px;transition:background .2s;animation:plunge-idle 1.4s ease-in-out infinite}
+.plunger-btn:hover{background:rgba(0,0,0,0.05)}
+.plunger-btn.show{display:inline-flex;align-items:center;gap:6px}
+.plunger-btn.working{animation:plunge-work .5s ease-in-out;pointer-events:none}
+.plunger-label{font-size:.85rem;color:#666;font-family:inherit}
+@keyframes plunge-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes plunge-work{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-35px) rotate(-8deg)}40%{transform:translateY(8px) rotate(4deg)}60%{transform:translateY(-20px) rotate(-5deg)}80%{transform:translateY(4px) rotate(2deg)}100%{transform:translateY(0) rotate(0)}}
+.stats{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.stat-card{background:#fff;border-radius:16px;padding:12px 18px;box-shadow:0 2px 16px rgba(0,0,0,0.06);min-width:110px;flex:1;transition:transform .2s,box-shadow .2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.10)}
+.stat-icon{font-size:22px;margin-bottom:1px}
+.stat-label{font-size:.78rem;color:#999;margin-bottom:2px;white-space:nowrap}
+.stat-value{font-size:1.7rem;font-weight:800;color:#2c2c2c;font-variant-numeric:tabular-nums}
+.stat-card:nth-child(1) .stat-value{color:#f9a825}
+.stat-card:nth-child(2) .stat-value{color:#1e88e5}
+.stat-card:nth-child(3) .stat-value{color:#e53935}
+.stat-card:nth-child(4) .stat-value{color:#7b1fa2}
+.stat-card:nth-child(5) .stat-value{color:#00897b}
+.stat-card:nth-child(6) .stat-value{color:#6d4c41}
+.stat-value.bump{animation:bump .25s ease}
+@keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+.lookback-area{margin-top:6px;height:60px;display:flex;align-items:center;justify-content:center}
+.lookback-btn{cursor:pointer;font-size:34px;line-height:1;background:none;border:none;padding:6px 20px;border-radius:30px;transition:background .2s}
+.lookback-btn:hover{background:rgba(0,0,0,0.05)}
+.lookback-btn:active{transform:scale(.95)}
+.lookback-label{font-size:.85rem;color:#666;font-family:inherit}
+.footer{margin-top:28px;font-size:.7rem;color:#ccc;letter-spacing:.3px}
 
-    /* ===== Header ===== */
-    h1 {
-      font-size: 2.2rem;
-      color: #2c2c2c;
-      font-weight: 800;
-      letter-spacing: 2px;
-      margin-bottom: 2px;
-    }
-    .subtitle {
-      font-size: 0.9rem;
-      color: #999;
-      margin-bottom: 6px;
-    }
-    .tagline {
-      font-size: 0.8rem;
-      color: #bbb;
-      font-style: italic;
-      margin-bottom: 20px;
-      line-height: 1.5;
-      padding: 0 8px;
-    }
+/* User Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:99;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:20px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center}
+.modal-title{font-size:1.1rem;font-weight:700;color:#333;margin-bottom:4px}
+.modal-desc{font-size:.82rem;color:#999;margin-bottom:16px}
+.modal-input{width:100%;border:2px solid #eee;border-radius:14px;padding:10px 16px;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s;text-align:center}
+.modal-input:focus{border-color:#1e88e5}
+.modal-btn{background:#1e88e5;color:#fff;border:none;border-radius:14px;padding:10px 28px;font-size:.9rem;cursor:pointer;font-family:inherit;margin-top:12px;font-weight:600;transition:background .2s}
+.modal-btn:hover{background:#1565c0}
+.modal-btn:active{transform:scale(.97)}
+.modal-hint{font-size:.72rem;color:#bbb;margin-top:10px}
 
-    /* ===== Toilet ===== */
-    .toilet-wrapper {
-      position: relative;
-      display: inline-block;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: filter 0.3s;
-    }
-    .toilet-wrapper:not(.disabled):not(.flushing):hover {
-      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.12));
-    }
-    .toilet-wrapper:not(.disabled):not(.flushing):active svg {
-      transform: scale(0.97);
-    }
-    .toilet-wrapper.disabled { cursor: not-allowed; }
-
-    .toilet-svg {
-      width: 210px;
-      height: 310px;
-      display: block;
-      transition: transform 0.1s;
-    }
-
-    .toilet-wrapper.clogged .water { fill: #e8744a; transition: fill 0.5s; }
-    .toilet-wrapper.clogged .water-highlight { fill: #f0987a; transition: fill 0.5s; }
-
-    .toilet-wrapper.flushing .toilet-svg {
-      animation: shake 0.55s ease-in-out;
-    }
-    @keyframes shake {
-      0%   { transform: translateX(0); }
-      12%  { transform: translateX(-7px) rotate(-1deg); }
-      25%  { transform: translateX(7px) rotate(1deg); }
-      37%  { transform: translateX(-5px) rotate(-0.6deg); }
-      50%  { transform: translateX(5px) rotate(0.6deg); }
-      62%  { transform: translateX(-3px); }
-      75%  { transform: translateX(3px); }
-      87%  { transform: translateX(-1px); }
-      100% { transform: translateX(0); }
-    }
-
-    .toilet-wrapper.flushing .water { animation: swirl 0.5s ease-in-out; }
-    .toilet-wrapper.flushing .water-highlight { animation: swirl 0.5s ease-in-out reverse; }
-    @keyframes swirl {
-      0%   { transform: scale(1, 1); }
-      30%  { transform: scale(0.82, 0.65); }
-      60%  { transform: scale(1.08, 0.88); }
-      100% { transform: scale(1, 1); }
-    }
-
-    /* ===== Splash ===== */
-    .splash-area {
-      position: absolute;
-      bottom: 76px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 130px;
-      height: 110px;
-      pointer-events: none;
-      overflow: visible;
-      z-index: 2;
-    }
-    .drop {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      width: 8px; height: 10px;
-      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-      background: linear-gradient(180deg, #81d4fa, #29b6f6);
-      opacity: 0;
-      animation: drop-fly 0.7s ease-out forwards;
-    }
-    .drop:nth-child(odd) { width: 6px; height: 8px; }
-    .drop:nth-child(3n)  { width: 10px; height: 12px; }
-    @keyframes drop-fly {
-      0%   { opacity: 1; transform: translate(0, 0) scale(1); }
-      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); }
-    }
-
-    /* ===== Clog badge ===== */
-    .clog-badge {
-      position: absolute;
-      top: -10px;
-      right: -18px;
-      background: #e65100;
-      color: #fff;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      opacity: 0;
-      transform: scale(0);
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      z-index: 3;
-      white-space: nowrap;
-    }
-    .clog-badge.show { opacity: 1; transform: scale(1); }
-
-    /* ===== Status ===== */
-    .status-msg {
-      margin-top: 14px;
-      font-size: 0.95rem;
-      color: #888;
-      min-height: 1.6em;
-      transition: color 0.3s;
-    }
-    .status-msg.clogged   { color: #d84315; font-weight: 600; }
-    .status-msg.flushing  { color: #0288d1; }
-
-    /* ===== Plunger ===== */
-    .plunger-area {
-      margin-top: 12px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .plunger-btn {
-      display: none;
-      cursor: pointer;
-      font-size: 38px;
-      line-height: 1;
-      background: none;
-      border: none;
-      padding: 8px 24px;
-      border-radius: 30px;
-      transition: background 0.2s;
-      animation: plunge-idle 1.4s ease-in-out infinite;
-    }
-    .plunger-btn:hover { background: rgba(0,0,0,0.05); }
-    .plunger-btn.show { display: inline-flex; align-items: center; gap: 6px; }
-    .plunger-btn.working {
-      animation: plunge-work 0.5s ease-in-out;
-      pointer-events: none;
-    }
-    .plunger-label {
-      font-size: 0.85rem;
-      color: #666;
-      font-family: inherit;
-    }
-    @keyframes plunge-idle {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-    @keyframes plunge-work {
-      0%   { transform: translateY(0) rotate(0deg); }
-      20%  { transform: translateY(-35px) rotate(-8deg); }
-      40%  { transform: translateY(8px) rotate(4deg); }
-      60%  { transform: translateY(-20px) rotate(-5deg); }
-      80%  { transform: translateY(4px) rotate(2deg); }
-      100% { transform: translateY(0) rotate(0deg); }
-    }
-
-    /* ===== Stats ===== */
-    .stats {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .stat-card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 12px 18px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-      min-width: 110px;
-      flex: 1;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 24px rgba(0,0,0,0.10);
-    }
-    .stat-icon  { font-size: 22px; margin-bottom: 1px; }
-    .stat-label { font-size: 0.78rem; color: #999; margin-bottom: 2px; white-space: nowrap; }
-    .stat-value {
-      font-size: 1.7rem;
-      font-weight: 800;
-      color: #2c2c2c;
-      font-variant-numeric: tabular-nums;
-    }
-    .stat-card:nth-child(1) .stat-value { color: #f9a825; }
-    .stat-card:nth-child(2) .stat-value { color: #1e88e5; }
-    .stat-card:nth-child(3) .stat-value { color: #e53935; }
-    .stat-card:nth-child(4) .stat-value { color: #7b1fa2; }
-    .stat-card:nth-child(5) .stat-value { color: #00897b; }
-    .stat-card:nth-child(6) .stat-value { color: #6d4c41; }
-
-    .stat-value.bump {
-      animation: bump 0.25s ease;
-    }
-    @keyframes bump {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.25); }
-      100% { transform: scale(1); }
-    }
-
-    /* ===== Lookback ===== */
-    .lookback-area {
-      margin-top: 6px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .lookback-btn {
-      cursor: pointer;
-      font-size: 34px;
-      line-height: 1;
-      background: none;
-      border: none;
-      padding: 6px 20px;
-      border-radius: 30px;
-      transition: background 0.2s;
-    }
-    .lookback-btn:hover { background: rgba(0,0,0,0.05); }
-    .lookback-btn:active { transform: scale(0.95); }
-    .lookback-label {
-      font-size: 0.85rem;
-      color: #666;
-      font-family: inherit;
-    }
-
-    /* ===== Footer ===== */
-    .footer {
-      margin-top: 28px;
-      font-size: 0.7rem;
-      color: #ccc;
-      letter-spacing: 0.3px;
-    }
-
-    /* ===== Responsive ===== */
-    @media (max-width: 480px) {
-      h1 { font-size: 1.6rem; }
-      .subtitle { font-size: 0.8rem; }
-      .tagline { font-size: 0.72rem; margin-bottom: 14px; }
-      .toilet-svg { width: 150px; height: 230px; }
-      .splash-area { bottom: 55px; width: 100px; height: 80px; }
-      .stat-card { padding: 8px 12px; min-width: 70px; }
-      .stat-value { font-size: 1.3rem; }
-      .stat-icon { font-size: 18px; }
-      .stat-label { font-size: 0.65rem; }
-      .stats { gap: 8px; }
-      .plunger-btn, .lookback-btn { font-size: 30px; }
-      .lookback-btn { padding: 4px 14px; }
-      .stats-prefix { font-size: 0.72rem; margin: 14px 0 4px; }
-    }
-  </style>
+/* Mobile toggle buttons */
+@media(max-width:900px){
+.side-toggle{display:block!important;position:fixed;width:40px;height:40px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 12px rgba(0,0,0,0.12);cursor:pointer;font-size:1.2rem;z-index:50;transition:transform .2s}
+.side-toggle:active{transform:scale(.9)}
+.side-toggle-l{left:10px;bottom:80px}
+.side-toggle-r{right:10px;bottom:80px}
+.panel{position:fixed;top:0;width:280px;height:100%;z-index:90;background:#efe8e0;padding:16px;overflow-y:auto;transform:translateX(-100%);transition:transform .3s ease;box-shadow:2px 0 20px rgba(0,0,0,0.1)}
+.panel.open{transform:translateX(0)}
+.panel-r{right:0;transform:translateX(100%)}
+.panel-r.open{transform:translateX(0)}
+.panel-l{left:0}
+.panel-close{display:block!important;position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999;z-index:5}
+}
+@media(min-width:901px){.panel-close{display:none!important}}
+@media(max-width:480px){
+h1{font-size:1.6rem}.subtitle{font-size:.8rem}.tagline{font-size:.72rem;margin-bottom:14px}
+.toilet-svg{width:150px;height:230px}.splash-area{bottom:55px;width:100px;height:80px}
+.stat-card{padding:8px 12px;min-width:70px}.stat-value{font-size:1.3rem}.stat-icon{font-size:18px}.stat-label{font-size:.65rem}.stats{gap:8px}
+.plunger-btn,.lookback-btn{font-size:30px}.lookback-btn{padding:4px 14px}
+.stats-prefix{font-size:.72rem;margin:14px 0 4px}
+}
+</style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Language switcher -->
-  <div class="top-bar">
-    <div class="lang-switch">
-      <span class="lang-opt" data-lang="zh" onclick="window.__toggleLang('zh')">&#x4E2D;</span>
-      <span class="lang-sep">|</span>
-      <span class="lang-opt" data-lang="en" onclick="window.__toggleLang('en')">EN</span>
-    </div>
-    <button class="sync-btn" onclick="window.__syncStats()" data-l10n="sync_btn">&#x1F504; 同步</button>
-  </div>
-
-  <!-- Header -->
-  <h1 id="title" data-l10n="title">&#x1F4A9; 赛博厕所</h1>
-  <p class="subtitle" id="subtitle" data-l10n="subtitle">带薪拉屎模拟器</p>
-  <p class="tagline" id="tagline" data-l10n="tagline">让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎</p>
-
-  <!-- Toilet -->
-  <div class="toilet-wrapper" id="toilet">
-    <svg class="toilet-svg" viewBox="0 0 240 350" aria-label="Toilet">
-      <rect x="55" y="28" width="130" height="102" rx="8" fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
-      <rect x="48" y="20" width="144" height="18" rx="9" fill="#ffffff" stroke="#d0d0d0" stroke-width="2"/>
-      <rect x="54" y="22" width="132" height="4" rx="2" fill="#f4f4f4"/>
-      <rect x="180" y="56" width="14" height="28" rx="4" fill="#c8c8c8" stroke="#aaa" stroke-width="1.5"/>
-      <rect x="182" y="62" width="4" height="16" rx="2" fill="#aaa"/>
-      <path d="M 34 140 Q 12 222 34 278 Q 66 332 120 337 Q 174 332 206 278 Q 228 222 206 140 Z"
-            fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
-      <path d="M 39 144 Q 20 222 39 272 Q 68 325 120 330 Q 172 325 201 272 Q 220 222 201 144 Z"
-            fill="#f6f6f6"/>
-      <ellipse cx="120" cy="158" rx="88" ry="36" fill="#ffffff" stroke="#d0d0d0" stroke-width="2"/>
-      <ellipse cx="120" cy="158" rx="72" ry="26" fill="#f4f4f4" stroke="#d6d6d6" stroke-width="1.5"/>
-      <ellipse cx="120" cy="160" rx="68" ry="22" fill="#efefef"/>
-      <ellipse class="water" cx="120" cy="166" rx="58" ry="17" fill="#4fc3f7"/>
-      <ellipse class="water-highlight" cx="108" cy="162" rx="28" ry="6" fill="#81d4fa" opacity="0.55"/>
-      <circle cx="72" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width="0.5"/>
-      <circle cx="168" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width="0.5"/>
-    </svg>
-
-    <div class="splash-area" id="splashArea"></div>
-    <div class="clog-badge" id="clogBadge">&#x1F9F1; <span data-l10n="clog_badge">堵了</span></div>
-  </div>
-
-  <!-- Status -->
-  <div class="status-msg" id="statusMsg" data-l10n="status_default">&#x1F4A1; 点击马桶冲水</div>
-
-  <!-- Plunger -->
-  <div class="plunger-area">
-    <button class="plunger-btn" id="plungerBtn">
-      <span>&#x1F9F9;</span>
-      <span class="plunger-label" data-l10n="plunger">通一下</span>
-    </button>
-  </div>
-
-  <!-- Lookback -->
-  <div class="lookback-area">
-    <button class="lookback-btn" id="lookbackBtn">
-      <span>&#x1F440;</span>
-      <span class="lookback-label" data-l10n="lookback">回头看一眼</span>
-    </button>
-  </div>
-
-  <!-- Stats -->
-  <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
-  <p class="capacity-line" id="capacityLine">&#x1F4A9; 0L / 15L</p>
-  <div class="stats">
-    <div class="stat-card">
-      <div class="stat-icon">&#x1F4BC;</div>
-      <div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div>
-      <div class="stat-value" id="statPeople">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">&#x1F6BF;</div>
-      <div class="stat-label" data-l10n="stat_flushes">冲水次数</div>
-      <div class="stat-value" id="statFlushes">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">&#x1F527;</div>
-      <div class="stat-label" data-l10n="stat_clogs">堵马桶次数</div>
-      <div class="stat-value" id="statClogs">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">&#x1F4A6;</div>
-      <div class="stat-label" data-l10n="stat_overflow_count">漾出次数</div>
-      <div class="stat-value" id="statOverflowCount">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">&#x1F4A7;</div>
-      <div class="stat-label" data-l10n="stat_overflow_vol">漾出体积</div>
-      <div class="stat-value" id="statOverflowVol">0L</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">&#x1F440;</div>
-      <div class="stat-label" data-l10n="stat_lookbacks">回头看一眼</div>
-      <div class="stat-value" id="statLookbacks">0</div>
+<div class="app-layout">
+  <!-- Left Panel: Leaderboard -->
+  <div class="panel panel-l" id="lbPanel">
+    <button class="panel-close" onclick="window.__toggleLB()">✕</button>
+    <div class="panel-inner">
+      <div class="panel-title">
+        <span data-l10n="lb_title">🏆 排行榜</span>
+        <button class="panel-toggle" onclick="window.__toggleLB()" data-l10n="lb_collapse">收起</button>
+      </div>
+      <div class="panel-body" id="lbBody">
+        <div class="lb-tabs" id="lbTabs"></div>
+        <div id="lbList"><div class="lb-empty" data-l10n="lb_loading">加载中...</div></div>
+      </div>
     </div>
   </div>
 
-  <div class="footer" data-l10n="footer">&#x1F680; Hosted on GitHub Pages</div>
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="top-bar">
+      <button class="side-toggle side-toggle-l" onclick="window.__toggleLB()">🏆</button>
+      <div style="flex:1"></div>
+      <button class="user-btn" id="userBtn" onclick="window.__showUserModal()">👤 登录</button>
+      <div class="lang-switch">
+        <span class="lang-opt" data-lang="zh" onclick="window.__toggleLang('zh')">中</span>
+        <span class="lang-sep">|</span>
+        <span class="lang-opt" data-lang="en" onclick="window.__toggleLang('en')">EN</span>
+      </div>
+      <button class="sync-btn" onclick="window.__syncStats()" data-l10n="sync_btn">🔄 同步</button>
+      <button class="side-toggle side-toggle-r" onclick="window.__toggleSW()">📝</button>
+    </div>
+
+    <h1 id="title" data-l10n="title">💩 赛博厕所</h1>
+    <p class="subtitle" id="subtitle" data-l10n="subtitle">带薪拉屎模拟器</p>
+    <p class="tagline" id="tagline" data-l10n="tagline">让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎</p>
+
+    <div class="toilet-wrapper" id="toilet">
+      <svg class="toilet-svg" viewBox="0 0 240 350" aria-label="Toilet">
+        <rect x="55" y="28" width="130" height="102" rx="8" fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
+        <rect x="48" y="20" width="144" height="18" rx="9" fill="#fff" stroke="#d0d0d0" stroke-width="2"/>
+        <rect x="54" y="22" width="132" height="4" rx="2" fill="#f4f4f4"/>
+        <rect x="180" y="56" width="14" height="28" rx="4" fill="#c8c8c8" stroke="#aaa" stroke-width="1.5"/>
+        <rect x="182" y="62" width="4" height="16" rx="2" fill="#aaa"/>
+        <path d="M34 140Q12 222 34 278Q66 332 120 337Q174 332 206 278Q228 222 206 140Z" fill="#fcfcfc" stroke="#d0d0d0" stroke-width="2"/>
+        <path d="M39 144Q20 222 39 272Q68 325 120 330Q172 325 201 272Q220 222 201 144Z" fill="#f6f6f6"/>
+        <ellipse cx="120" cy="158" rx="88" ry="36" fill="#fff" stroke="#d0d0d0" stroke-width="2"/>
+        <ellipse cx="120" cy="158" rx="72" ry="26" fill="#f4f4f4" stroke="#d6d6d6" stroke-width="1.5"/>
+        <ellipse cx="120" cy="160" rx="68" ry="22" fill="#efefef"/>
+        <ellipse class="water" cx="120" cy="166" rx="58" ry="17" fill="#4fc3f7"/>
+        <ellipse class="water-highlight" cx="108" cy="162" rx="28" ry="6" fill="#81d4fa" opacity=".55"/>
+        <circle cx="72" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width=".5"/>
+        <circle cx="168" cy="160" r="3.5" fill="#e0e0e0" stroke="#ccc" stroke-width=".5"/>
+      </svg>
+      <div class="splash-area" id="splashArea"></div>
+      <div class="clog-badge" id="clogBadge">🧱 <span data-l10n="clog_badge">堵了</span></div>
+    </div>
+
+    <div class="status-msg" id="statusMsg" data-l10n="status_default">💡 点击马桶冲水</div>
+
+    <div class="plunger-area">
+      <button class="plunger-btn" id="plungerBtn"><span>🧹</span><span class="plunger-label" data-l10n="plunger">通一下</span></button>
+    </div>
+
+    <div class="lookback-area">
+      <button class="lookback-btn" id="lookbackBtn"><span>👀</span><span class="lookback-label" data-l10n="lookback">回头看一眼</span></button>
+    </div>
+
+    <p class="stats-prefix" data-l10n="stats_prefix">在你之前已有：</p>
+    <p class="capacity-line" id="capacityLine">💩 0L / 15L</p>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label" data-l10n="stat_people">带薪拉屎人数</div><div class="stat-value" id="statPeople">0</div></div>
+      <div class="stat-card"><div class="stat-icon">🚿</div><div class="stat-label" data-l10n="stat_flushes">冲水次数</div><div class="stat-value" id="statFlushes">0</div></div>
+      <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-label" data-l10n="stat_clogs">堵马桶次数</div><div class="stat-value" id="statClogs">0</div></div>
+      <div class="stat-card"><div class="stat-icon">💦</div><div class="stat-label" data-l10n="stat_overflow_count">漾出次数</div><div class="stat-value" id="statOverflowCount">0</div></div>
+      <div class="stat-card"><div class="stat-icon">💧</div><div class="stat-label" data-l10n="stat_overflow_vol">漾出体积</div><div class="stat-value" id="statOverflowVol">0L</div></div>
+      <div class="stat-card"><div class="stat-icon">👀</div><div class="stat-label" data-l10n="stat_lookbacks">回头看</div><div class="stat-value" id="statLookbacks">0</div></div>
+    </div>
+    <div class="footer" data-l10n="footer">🚀 Hosted on GitHub Pages</div>
+  </div>
+
+  <!-- Right Panel: Signature Wall -->
+  <div class="panel panel-r" id="swPanel">
+    <button class="panel-close" onclick="window.__toggleSW()">✕</button>
+    <div class="panel-inner">
+      <div class="panel-title">
+        <span data-l10n="sw_title">📝 签名墙</span>
+        <button class="panel-toggle" onclick="window.__toggleSW()" data-l10n="sw_collapse">收起</button>
+      </div>
+      <div class="panel-body" id="swBody">
+        <div class="sig-list" id="sigList"><div class="lb-empty" data-l10n="lb_loading">加载中...</div></div>
+        <div class="sig-input-row">
+          <input class="sig-input" id="sigInput" placeholder="输入ID" maxlength="12" onkeydown="if(event.key==='Enter')window.__addSignature()">
+          <button class="sig-btn" onclick="window.__addSignature()">✚</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal-box">
+    <div class="modal-title" data-l10n="modal_title">👤 你的ID</div>
+    <div class="modal-desc" data-l10n="modal_desc">输入一个ID，你的数据将保存在这个ID下</div>
+    <input class="modal-input" id="modalInput" placeholder="输入ID..." maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')window.__confirmUser()">
+    <button class="modal-btn" onclick="window.__confirmUser()" data-l10n="modal_btn">确认</button>
+    <div class="modal-hint" data-l10n="modal_hint">同一ID可随时继续刷数据</div>
+  </div>
 </div>
 
 <script>
-(function() {
-  'use strict';
+(function(){
+'use strict';
 
-  // =====================================================================
-  //  Translations
-  // =====================================================================
-  var L10N = {
-    zh: {
-      title:        '\u{1F4A9} 赛博厕所',
-      subtitle:     '带薪拉屎模拟器',
-      tagline:      '让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
-      status_syncing:   '\u{1F504} 同步中...',
-      status_sync_err:  '\u{274C} 同步失败，点\u{1F504}重试',
-      sync_btn:       '\u{1F504} 同步',
-      stats_prefix:   '在你之前已有：',
-      status_default:  '\u{1F4A1} 点击马桶冲水',
-      status_flushing: '\u{1F6BF} 冲水中...',
-      status_ok:       '\u{2705} 冲水成功',
-      status_clogged:  '\u{1F4A9} 堵了！快用皮搋子通一通...',
-      status_unclogging: '\u{1F9F9} 正在疏通...',
-      status_unclogged:  '\u{2705} 通了！可以继续冲水了',
-      status_unclog_fail:'\u{1F630} 没通开，再试试...',
-      stat_people:  '带薪拉屎人数',
-      stat_flushes: '冲水次数',
-      stat_clogs:   '堵马桶次数',
-      stat_overflow_count: '漾出次数',
-      stat_overflow_vol: '漾出体积(L)',
-      capacity_line: '\u{1F4A9} {cur}L / 15L',
-      status_lookback: '\u{1F440} 回头看了一眼...',
-      status_poop:   '拉了 {poop}L \u{1F4A9}',
-      status_overflow: '\u{1F4A6} 漾出 +{overflow}L水！拉了 {poop}L \u{1F4A9}',
-      lookback:      '回头看一眼',
-      lb_normal:     '\u{1F914} 平平无奇，Nothing special.',
-      lb_golden:     '\u{1F40D} 黄金巨蟒！金光闪闪，堪称艺术品！',
-      lb_strawberry: '\u{1F353} 草...草莓塔？？？你陷入了沉思...',
-      stat_lookbacks: '回头看一眼次数',
-      plunger:      '通一下',
-      clog_badge:   '堵了',
-      footer:       '\u{1F680} Hosted on GitHub Pages',
-    },
-    en: {
-      title:        '\u{1F4A9} Cyber Toilet',
-      subtitle:     'Paid Dump Simulator',
-      tagline:      'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
-      sync_btn:       '\u{1F504} 同步',
-      stats_prefix:   'Before you:',
-      status_syncing:   '\u{1F504} Syncing...',
-      status_sync_err:  '\u{274C} Sync failed, click \u{1F504} to retry',
-      status_default:  '\u{1F4A1} Click the toilet to flush',
-      status_flushing: '\u{1F6BF} Flushing...',
-      status_ok:       '\u{2705} Flush successful',
-      status_clogged:  '\u{1F4A9} Clogged! Use the plunger...',
-      status_unclogging: '\u{1F9F9} Plunging...',
-      status_unclogged:  '\u{2705} Unclogged! Ready to flush',
-      status_unclog_fail:'\u{1F630} Still clogged, try again...',
-      stat_people:  'Paid Poops',
-      stat_flushes: 'Flushes',
-      stat_clogs:   'Clogs',
-      stat_overflow_count: 'Overflows',
-      stat_overflow_vol: 'Overflow (L)',
-      capacity_line: '\u{1F4A9} {cur}L / 15L',
-      status_lookback: '\u{1F440} Looked back...',
-      status_poop:   'Pooped {poop}L \u{1F4A9}',
-      status_overflow: '\u{1F4A6} Overflow +{overflow}L! Pooped {poop}L \u{1F4A9}',
-      lookback:      'Look Back',
-      lb_normal:     '\u{1F914} Just a regular poop, nothing special.',
-      lb_golden:     '\u{1F40D} Golden Python! A masterpiece shines before you!',
-      lb_strawberry: '\u{1F353} A... Strawberry Tower??? You are deep in thought...',
-      stat_lookbacks: 'Look Backs',
-      plunger:      'Plunge',
-      clog_badge:   'Clogged',
-      footer:       '\u{1F680} Hosted on GitHub Pages',
-    },
-  };
+// ===== Translations =====
+var L10N={
+zh:{
+title:'💩 赛博厕所',subtitle:'带薪拉屎模拟器',
+tagline:'让神圣的赛博下水道将我们连接在一起，在工位上也能带薪拉屎',
+stats_prefix:'在你之前已有：',sync_btn:'🔄 同步',
+status_default:'💡 点击马桶冲水',status_flushing:'🚿 冲水中...',
+status_ok:'✅ 冲水成功',status_clogged:'💩 堵了',
+status_unclogging:'🧹 正在疏通...',status_unclogged:'✅ 通了！',status_unclog_fail:'😰 没通开...',
+status_poop:'拉了 {poop}L 💩',status_overflow:'💦 漾出 +{overflow}L水！拉了 {poop}L 💩',
+status_lookback:'👀 回头看了一眼...',
+lb_normal:'🤷 平平无奇，Nothing special.',
+lb_golden:'🐍 黄金巨蟒！金光闪闪，堪称艺术品！',
+lb_strawberry:'🍓 草...草莓塔？？？你陷入了沉思...',
+stat_people:'带薪拉屎人数',stat_flushes:'冲水次数',stat_clogs:'堵马桶次数',
+stat_overflow_count:'漾出次数',stat_overflow_vol:'漾出体积(L)',
+stat_lookbacks:'回头看次数',capacity_line:'💩 {cur}L / 15L',
+lookback:'回头看一眼',plunger:'通一下',clog_badge:'堵了',
+footer:'🚀 Hosted on GitHub Pages',
+lb_title:'🏆 排行榜',lb_collapse:'收起',lb_loading:'加载中...',lb_empty:'暂无数据',
+sw_title:'📝 签名墙',sw_collapse:'收起',sw_placeholder:'输入ID',
+modal_title:'👤 你的ID',modal_desc:'输入一个ID，你的数据将保存在这个ID下',modal_btn:'确认',modal_hint:'同一ID可随时继续刷数据',
+user_login:'👤 登录',user_logout:'退出',
+lb_tab_flushes:'🚿冲水',lb_tab_golden:'🐍黄金',lb_tab_strawberry:'🍓草莓',lb_tab_lookbacks:'👀回头',lb_tab_overflows:'💦漾出',
+},
+en:{
+title:'💩 Cyber Toilet',subtitle:'Paid Dump Simulator',
+tagline:'let the sacred cyber sewers connect us, and even at our desks, we can take paid dumps.',
+stats_prefix:'Before you:',sync_btn:'🔄 Sync',
+status_default:'💡 Click to flush',status_flushing:'🚿 Flushing...',
+status_ok:'✅ Flush successful',status_clogged:'💩 Clogged',
+status_unclogging:'🧹 Plunging...',status_unclogged:'✅ Unclogged!',status_unclog_fail:'😰 Try again...',
+status_poop:'Pooped {poop}L 💩',status_overflow:'💦 Overflow +{overflow}L! Pooped {poop}L 💩',
+status_lookback:'👀 Looked back...',
+lb_normal:'🤷 Just a regular poop, nothing special.',
+lb_golden:'🐍 Golden Python! A masterpiece shines before you!',
+lb_strawberry:'🍓 A... Strawberry Tower??? You are deep in thought...',
+stat_people:'Paid Poops',stat_flushes:'Flushes',stat_clogs:'Clogs',
+stat_overflow_count:'Overflows',stat_overflow_vol:'Overflow (L)',
+stat_lookbacks:'Look Backs',capacity_line:'💩 {cur}L / 15L',
+lookback:'Look Back',plunger:'Plunge',clog_badge:'Clogged',
+footer:'🚀 Hosted on GitHub Pages',
+lb_title:'🏆 Leaderboard',lb_collapse:'Collapse',lb_loading:'Loading...',lb_empty:'No data',
+sw_title:'📝 Signatures',sw_collapse:'Collapse',sw_placeholder:'Enter ID',
+modal_title:'👤 Your ID',modal_desc:'Enter an ID to save your stats under it',modal_btn:'Confirm',modal_hint:'Use the same ID anytime to continue',
+user_login:'👤 Login',user_logout:'Logout',
+lb_tab_flushes:'🚿Flushes',lb_tab_golden:'🐍Golden',lb_tab_strawberry:'🍓Strawberry',lb_tab_lookbacks:'👀Look',lb_tab_overflows:'💦Overflow',
+}
+};
 
-  // =====================================================================
-  //  State
-  // =====================================================================
-  var lang = 'zh';
-  var currentStatusKey  = 'status_default';
-  var currentStatusType = ''; // '' | 'flushing' | 'clogged'
+// ===== State =====
+var lang='zh',currentStatusKey='status_default',currentStatusType='';
+var serverPeople=0,serverFlushes=0,serverClogs=0,serverClogged=false;
+var serverPoopVolume=0,serverOverflowCount=0,serverOverflowVolume=0,serverLookBacks=0;
+var CAPACITY=15,isFlushing=false;
 
-  // Shared stats (synced via Gist API)
-  var serverPeople = 0;
-  var serverFlushes = 0;
-  var serverClogs = 0;
-  var serverClogged = false;
-  var serverPoopVolume = 0;
-  var serverOverflowCount = 0;
-  var serverOverflowVolume = 0;
-  var serverLookBacks = 0;
-  var CAPACITY = 15;
+// User system
+var myUserId='';
+var usersData={}; // { userId: {flushes,goldenPython,strawberryTower,lookBacks,overflowCount} }
+var userList=[];  // ordered list of user IDs for signature wall
 
-  // Local transient state
-  var isFlushing = false;
+// Leaderboard
+var lbCategory='flushes';
+var lbCategories=['flushes','goldenPython','strawberryTower','lookBacks','overflowCount'];
 
-  // DOM refs
-  var toiletEl       = document.getElementById('toilet');
-  var splashArea     = document.getElementById('splashArea');
-  var clogBadge      = document.getElementById('clogBadge');
-  var statusMsg      = document.getElementById('statusMsg');
-  var plungerBtn     = document.getElementById('plungerBtn');
-  var capacityLine   = document.getElementById('capacityLine');
-  var statPeople     = document.getElementById('statPeople');
-  var statFlushes    = document.getElementById('statFlushes');
-  var statClogs      = document.getElementById('statClogs');
-  var statOverflowCount = document.getElementById('statOverflowCount');
-  var statOverflowVol   = document.getElementById('statOverflowVol');
-  var statLookbacks     = document.getElementById('statLookbacks');
-  var lookbackBtn       = document.getElementById('lookbackBtn');
+// DOM refs
+var toiletEl=$('toilet'),splashArea=$('splashArea'),clogBadge=$('clogBadge');
+var statusMsg=$('statusMsg'),plungerBtn=$('plungerBtn'),capacityLine=$('capacityLine');
+var statPeople=$('statPeople'),statFlushes=$('statFlushes'),statClogs=$('statClogs');
+var statOverflowCount=$('statOverflowCount'),statOverflowVol=$('statOverflowVol');
+var statLookbacks=$('statLookbacks'),lookbackBtn=$('lookbackBtn');
+var userBtn=$('userBtn'),userModal=$('userModal'),modalInput=$('modalInput');
+var lbList=$('lbList'),lbBody=$('lbBody'),lbTabs=$('lbTabs');
+var sigList=$('sigList'),sigInput=$('sigInput');
+function $(id){return document.getElementById(id)}
 
-  // =====================================================================
-  //  Language
-  // =====================================================================
-  function t(key) { return (L10N[lang] && L10N[lang][key]) || L10N.zh[key] || key; }
+// ===== Language =====
+function t(k){return(L10N[lang]&&L10N[lang][k])||L10N.zh[k]||k}
+function applyLanguage(){
+document.querySelectorAll('[data-l10n]').forEach(function(el){var k=el.getAttribute('data-l10n');el.textContent=t(k)});
+document.title=t('title');
+document.querySelectorAll('.lang-opt').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-lang')===lang)});
+restoreStatus();renderLB();renderSW()
+}
+function restoreStatus(){statusMsg.textContent=t(currentStatusKey);statusMsg.className='status-msg'+(currentStatusType?' '+currentStatusType:'')}
+function detectLang(){var s=localStorage.getItem('ct-lang');if(s==='zh'||s==='en')return s;return(navigator.language||navigator.userLanguage||'zh').toLowerCase().indexOf('zh')===0?'zh':'en'}
+function toggleLang(to){if(to===lang)return;lang=to;localStorage.setItem('ct-lang',lang);applyLanguage()}
+window.__toggleLang=toggleLang;
 
-  function applyLanguage() {
-    // Update data-l10n elements
-    var els = document.querySelectorAll('[data-l10n]');
-    for (var i = 0; i < els.length; i++) {
-      var key = els[i].getAttribute('data-l10n');
-      els[i].textContent = t(key);
-    }
-    // Update title separately
-    document.title = t('title');
-    // Language switcher active state
-    var opts = document.querySelectorAll('.lang-opt');
-    for (var j = 0; j < opts.length; j++) {
-      opts[j].classList.toggle('active', opts[j].getAttribute('data-lang') === lang);
-    }
-    // Re-apply status message if set
-    restoreStatus();
-  }
+// ===== User System =====
+function loadUser(){var id=localStorage.getItem('ct-user');if(id&&id.trim()){myUserId=id.trim();updateUserBtn()}}
+function saveUser(id){myUserId=id;localStorage.setItem('ct-user',id);updateUserBtn()}
+function updateUserBtn(){if(myUserId){userBtn.textContent='👤 '+myUserId;userBtn.classList.add('active')}else{userBtn.textContent=t('user_login');userBtn.classList.remove('active')}}
+window.__showUserModal=function(){userModal.classList.add('show');modalInput.value=myUserId;modalInput.focus();modalInput.select()};
+window.__confirmUser=function(){
+var id=modalInput.value.trim();
+if(!id||id.length<1)return;
+if(id.length>12)id=id.slice(0,12);
+saveUser(id);
+userModal.classList.remove('show');
+// If new user, add to userList
+if(userList.indexOf(id)===-1){userList.push(id);userList.sort();syncToGist()}
+};
+// Auto-show modal on first visit
+if(!localStorage.getItem('ct-user')){setTimeout(function(){window.__showUserModal()},500)}
 
-  function restoreStatus() {
-    statusMsg.textContent = t(currentStatusKey);
-    statusMsg.className = 'status-msg' + (currentStatusType ? ' ' + currentStatusType : '');
-  }
+// ===== Gist =====
+var GIST_ID='432d134d33e8b3fe5e4d7ef463fb5f5e';
+var GIST_API='https://api.github.com/gists/'+GIST_ID;
+var GIST_TOKEN='ghp_'+'JAXl49Omzs7ujuGxBdTWQ9LkWWrRRl1xuWRv';
 
-  function detectLang() {
-    var stored = localStorage.getItem('ct-lang');
-    if (stored === 'zh' || stored === 'en') return stored;
-    var nav = (navigator.language || navigator.userLanguage || 'zh').toLowerCase();
-    return nav.indexOf('zh') === 0 ? 'zh' : 'en';
-  }
+function fetchStats(){
+return fetch(GIST_API,{headers:{Authorization:'token '+GIST_TOKEN}})
+.then(function(r){return r.json()})
+.then(function(data){
+var raw;try{raw=JSON.parse(data.files['stats.json'].content)}catch(e){return}
+// Support old flat format
+if(typeof raw.people==='number'&&raw.global===undefined){raw={global:raw,users:{},userList:[]}}
+var g=raw.global||{};
+serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
+serverPoopVolume=g.poopVolume||0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
+usersData=raw.users||{};userList=raw.userList||[];
+if(userList.indexOf(myUserId)===-1&&myUserId){userList.push(myUserId);userList.sort()}
+updateStatsUI();updateCloggedUI();renderLB();renderSW();
+if(!serverClogged&&(currentStatusKey==='status_clogged'||currentStatusKey==='status_unclog_fail'))setStatus('status_default','');
+}).catch(function(e){console.warn('Gist fetch:',e)})
+}
 
-  function toggleLang(to) {
-    if (to === lang) return;
-    lang = to;
-    localStorage.setItem('ct-lang', lang);
-    applyLanguage();
-  }
-  window.__toggleLang = toggleLang;
+function syncToGist(){
+return fetch(GIST_API,{method:'PATCH',headers:{Authorization:'token '+GIST_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({files:{'stats.json':{content:JSON.stringify({global:{people:serverPeople,flushes:serverFlushes,clogs:serverClogs,clogged:serverClogged,poopVolume:serverPoopVolume,overflowCount:serverOverflowCount,overflowVolume:serverOverflowVolume,lookBacks:serverLookBacks},users:usersData,userList:userList})}}})})
+.then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+.then(function(data){
+var s;try{s=JSON.parse(data.files['stats.json'].content)}catch(e){throw new Error('parse')}
+var g=s.global||{};
+serverPeople=g.people||0;serverFlushes=g.flushes||0;serverClogs=g.clogs||0;serverClogged=!!g.clogged;
+serverPoopVolume=g.poopVolume||0;serverOverflowCount=g.overflowCount||0;serverOverflowVolume=g.overflowVolume||0;serverLookBacks=g.lookBacks||0;
+usersData=s.users||{};userList=s.userList||[];
+updateStatsUI();updateCloggedUI();renderLB();renderSW();
+}).catch(function(e){console.warn('Gist sync:',e);setStatus('status_sync_err','clogged')})
+}
 
-  // =====================================================================
-  //  Gist-based shared stats — all reads & writes via API
-  // =====================================================================
-  var GIST_ID = '432d134d33e8b3fe5e4d7ef463fb5f5e';
-  var GIST_API = 'https://api.github.com/gists/' + GIST_ID;
-  var GIST_TOKEN = 'ghp_' + 'JAXl49Omzs7ujuGxBdTWQ9LkWWrRRl1xuWRv';
+function getMyUserData(){if(!myUserId)return null;if(!usersData[myUserId])usersData[myUserId]={flushes:0,goldenPython:0,strawberryTower:0,lookBacks:0,overflowCount:0};return usersData[myUserId]}
+function incMyUserStat(key){var d=getMyUserData();if(!d)return;d[key]=(d[key]||0)+1;syncToGist()}
 
-  // Read stats from Gist API -> update local state
-  function fetchStats() {
-    return fetch(GIST_API, {
-      headers: { Authorization: 'token ' + GIST_TOKEN }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var stats;
-      try { stats = JSON.parse(data.files['stats.json'].content); } catch(e) { return; }
-      serverPeople  = typeof stats.people  === 'number' ? stats.people  : 0;
-      serverFlushes = typeof stats.flushes === 'number' ? stats.flushes : 0;
-      serverClogs   = typeof stats.clogs   === 'number' ? stats.clogs   : 0;
-      serverClogged = !!stats.clogged;
-      serverPoopVolume    = typeof stats.poopVolume    === 'number' ? stats.poopVolume : 0;
-      serverOverflowCount = typeof stats.overflowCount === 'number' ? stats.overflowCount : 0;
-      serverOverflowVolume= typeof stats.overflowVolume=== 'number' ? stats.overflowVolume : 0;
-      serverLookBacks = typeof stats.lookBacks === 'number' ? stats.lookBacks : 0;
-      updateStatsUI();
-      updateCloggedUI();
-      if (!serverClogged &&
-          (currentStatusKey === 'status_clogged' || currentStatusKey === 'status_unclog_fail')) {
-        setStatus('status_default', '');
-      }
-    })
-    .catch(function(e) { console.warn('Gist fetch:', e); });
-  }
+window.__syncStats=function(){setStatus('status_syncing','flushing');fetchStats().then(function(){if(currentStatusKey==='status_syncing')setStatus('status_default','')})};
 
-  // Write current local state to Gist, then refresh from response
-  function syncToGist() {
-    return fetch(GIST_API, {
-      method: 'PATCH',
-      headers: {
-        Authorization: 'token ' + GIST_TOKEN,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        files: { 'stats.json': { content: JSON.stringify({
-          people: serverPeople,
-          flushes: serverFlushes,
-          clogs: serverClogs,
-          clogged: serverClogged,
-          poopVolume: serverPoopVolume,
-          overflowCount: serverOverflowCount,
-          overflowVolume: serverOverflowVolume,
-          lookBacks: serverLookBacks,
-        })}}
-      })
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      var s;
-      try { s = JSON.parse(data.files['stats.json'].content); } catch(e) { throw new Error('parse'); }
-      serverPeople  = s.people;
-      serverFlushes = s.flushes;
-      serverClogs   = s.clogs;
-      serverClogged = s.clogged;
-      serverPoopVolume    = typeof s.poopVolume    === 'number' ? s.poopVolume : 0;
-      serverOverflowCount = typeof s.overflowCount === 'number' ? s.overflowCount : 0;
-      serverOverflowVolume= typeof s.overflowVolume=== 'number' ? s.overflowVolume : 0;
-      serverLookBacks = typeof s.lookBacks === 'number' ? s.lookBacks : 0;
-      updateStatsUI();
-      updateCloggedUI();
-    })
-    .catch(function(e) {
-      console.warn('Gist sync:', e);
-      setStatus('status_sync_err', 'clogged');
-    });
-  }
+// ===== UI Updates =====
+function updateStatsUI(){
+statPeople.textContent=serverPeople;statFlushes.textContent=serverFlushes;statClogs.textContent=serverClogs;
+statOverflowCount.textContent=serverOverflowCount;statOverflowVol.textContent=serverOverflowVolume+'L';
+statLookbacks.textContent=serverLookBacks;
+capacityLine.textContent='💩 '+Math.min(serverPoopVolume,CAPACITY).toFixed(1)+'L / '+CAPACITY+'L'
+}
+function bumpStat(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+function setStatus(key,type){currentStatusKey=key;currentStatusType=type||'';statusMsg.textContent=t(key);statusMsg.className='status-msg'+(type?' '+type:'')}
+function updateCloggedUI(){
+if(serverClogged){toiletEl.classList.add('clogged');clogBadge.classList.add('show');plungerBtn.classList.add('show')}
+else{toiletEl.classList.remove('clogged');clogBadge.classList.remove('show');plungerBtn.classList.remove('show')}
+}
 
-  // Manual sync button
-  function handleSync() {
-    setStatus('status_syncing', 'flushing');
-    fetchStats().then(function() {
-      if (currentStatusKey === 'status_syncing') {
-        setStatus('status_default', '');
-      }
-    });
-  }
-  window.__syncStats = handleSync;
+// ===== Splash =====
+function createSplash(){
+var count=14+Math.floor(Math.random()*8);
+for(var i=0;i<count;i++){
+var drop=document.createElement('div');drop.className='drop';
+var angle=-30+Math.random()*60,dist=40+Math.random()*80,rad=angle*Math.PI/180;
+drop.style.setProperty('--dx',(Math.sin(rad)*dist)+'px');drop.style.setProperty('--dy',(-Math.cos(rad)*dist-20)+'px');
+drop.style.left=(Math.random()*60-30)+'px';drop.style.animationDelay=(Math.random()*0.15)+'s';drop.style.animationDuration=(0.5+Math.random()*0.3)+'s';
+splashArea.appendChild(drop);setTimeout(function(){drop.remove()},1000)
+}
+}
 
-  // =====================================================================
-  //  UI Updates
-  // =====================================================================
-  function updateStatsUI() {
-    statPeople.textContent  = serverPeople;
-    statFlushes.textContent = serverFlushes;
-    statClogs.textContent   = serverClogs;
-    statOverflowCount.textContent = serverOverflowCount;
-    statOverflowVol.textContent   = serverOverflowVolume + 'L';
-    statLookbacks.textContent     = serverLookBacks;
-    capacityLine.textContent = '\u{1F4A9} ' + Math.min(serverPoopVolume, CAPACITY).toFixed(1) + 'L / ' + CAPACITY + 'L';
-  }
+// ===== Leaderboard =====
+function renderLBTabs(){
+lbTabs.innerHTML='';
+var keys=['flushes','goldenPython','strawberryTower','lookBacks','overflowCount'];
+var labels=['lb_tab_flushes','lb_tab_golden','lb_tab_strawberry','lb_tab_lookbacks','lb_tab_overflows'];
+keys.forEach(function(k,i){
+var btn=document.createElement('button');btn.className='lb-tab'+(k===lbCategory?' active':'');btn.textContent=t(labels[i]);
+btn.onclick=function(){lbCategory=k;renderLBTabs();renderLBList()};
+lbTabs.appendChild(btn)
+})
+}
+function renderLBList(){
+lbList.innerHTML='';
+var entries=[];
+Object.keys(usersData).forEach(function(id){
+var d=usersData[id];if(!d)return;
+var val=0;
+if(lbCategory==='flushes')val=d.flushes||0;
+else if(lbCategory==='goldenPython')val=d.goldenPython||0;
+else if(lbCategory==='strawberryTower')val=d.strawberryTower||0;
+else if(lbCategory==='lookBacks')val=d.lookBacks||0;
+else if(lbCategory==='overflowCount')val=d.overflowCount||0;
+if(val>0)entries.push({id:id,val:val})
+});
+entries.sort(function(a,b){return b.val-a.val});
+if(entries.length===0){lbList.innerHTML='<div class="lb-empty">'+t('lb_empty')+'</div>';return}
+entries.slice(0,15).forEach(function(e,i){
+var div=document.createElement('div');div.className='lb-item';if(e.id===myUserId)div.style.background='rgba(33,150,243,0.08)';
+var rank=document.createElement('span');rank.className='rank';rank.textContent=i+1;div.appendChild(rank);
+var name=document.createElement('span');name.className='name';name.textContent=e.id;div.appendChild(name);
+var val=document.createElement('span');val.className='val';val.textContent=e.val;div.appendChild(val);
+lbList.appendChild(div)
+})
+}
+function renderLB(){renderLBTabs();renderLBList()}
+window.__toggleLB=function(){
+var p=$('lbPanel');
+if(window.innerWidth<=900){p.classList.toggle('open')}
+else{p.classList.toggle('collapsed');document.querySelector('#lbBody').style.display=p.classList.contains('collapsed')?'none':''}
+};
 
-  function bumpStat(el) {
-    el.classList.remove('bump');
-    void el.offsetWidth;
-    el.classList.add('bump');
-  }
+// ===== Signature Wall =====
+function renderSW(){
+sigList.innerHTML='';
+if(!userList||userList.length===0){sigList.innerHTML='<div class="lb-empty">'+t('lb_empty')+'</div>';return}
+userList.forEach(function(id){
+var div=document.createElement('div');div.className='sig-item';if(id===myUserId)div.classList.add('me');
+div.textContent=id;sigList.appendChild(div)
+})
+}
+window.__toggleSW=function(){
+var p=$('swPanel');
+if(window.innerWidth<=900){p.classList.toggle('open')}
+else{p.classList.toggle('collapsed');document.querySelector('#swBody').style.display=p.classList.contains('collapsed')?'none':''}
+};
+window.__addSignature=function(){
+var id=sigInput.value.trim();if(!id||id.length<1)return;
+if(id.length>12)id=id.slice(0,12);
+if(userList.indexOf(id)===-1){userList.push(id);userList.sort();syncToGist()}
+sigInput.value='';
+renderSW()
+};
 
-  function setStatus(key, type) {
-    currentStatusKey  = key;
-    currentStatusType = type || '';
-    statusMsg.textContent = t(key);
-    statusMsg.className = 'status-msg' + (type ? ' ' + type : '');
-  }
+// ===== Event Handlers =====
+function handleFlush(){
+if(isFlushing)return;
+isFlushing=true;toiletEl.classList.add('flushing');setStatus('status_flushing','flushing');createSplash();
+setTimeout(function(){
+toiletEl.classList.remove('flushing');isFlushing=false;
+serverPeople++;serverFlushes++;
+var poop=parseFloat((Math.random()*2.9+0.1).toFixed(1));serverPoopVolume=Math.min(serverPoopVolume+poop,CAPACITY);
+if(serverClogged){
+serverOverflowCount++;serverOverflowVolume+=2;bumpStat(statOverflowCount);bumpStat(statOverflowVol);
+statusMsg.textContent=t('status_overflow').replace('{poop}',poop.toFixed(1)).replace('{overflow}','2');
+statusMsg.className='status-msg clogged';
+if(myUserId){incMyUserStat('overflowCount')}
+}else{
+statusMsg.textContent=t('status_poop').replace('{poop}',poop.toFixed(1));statusMsg.className='status-msg';
+serverPoopVolume=0
+}
+updateStatsUI();bumpStat(statPeople);bumpStat(statFlushes);
+if(myUserId){incMyUserStat('flushes')}
+if(!serverClogged&&Math.random()<0.18){serverClogged=true;serverClogs++;updateCloggedUI();updateStatsUI();bumpStat(statClogs)}
+syncToGist()
+},650)
+}
 
-  function updateCloggedUI() {
-    if (serverClogged) {
-      toiletEl.classList.add('clogged');
-      clogBadge.classList.add('show');
-      plungerBtn.classList.add('show');
-    } else {
-      toiletEl.classList.remove('clogged');
-      clogBadge.classList.remove('show');
-      plungerBtn.classList.remove('show');
-    }
-  }
+function handlePlunge(){
+if(plungerBtn.classList.contains('working'))return;
+plungerBtn.classList.add('working');setStatus('status_unclogging','flushing');
+setTimeout(function(){
+plungerBtn.classList.remove('working');
+if(Math.random()<0.75){serverClogged=false;updateCloggedUI();syncToGist();setStatus('status_unclogged','')}
+else{setStatus('status_unclog_fail','clogged')}
+},600)
+}
 
-  // =====================================================================
-  //  Splash particles
-  // =====================================================================
-  function createSplash() {
-    var count = 14 + Math.floor(Math.random() * 8);
-    for (var i = 0; i < count; i++) {
-      var drop = document.createElement('div');
-      drop.className = 'drop';
-      var angle = -30 + Math.random() * 60;
-      var dist  = 40 + Math.random() * 80;
-      var rad   = angle * Math.PI / 180;
-      drop.style.setProperty('--dx', (Math.sin(rad) * dist) + 'px');
-      drop.style.setProperty('--dy', (-Math.cos(rad) * dist - 20) + 'px');
-      drop.style.left = (Math.random() * 60 - 30) + 'px';
-      drop.style.animationDelay    = (Math.random() * 0.15) + 's';
-      drop.style.animationDuration = (0.5 + Math.random() * 0.3) + 's';
-      splashArea.appendChild(drop);
-      setTimeout(function() { drop.remove(); }, 1000);
-    }
-  }
+function handleLookBack(){
+var roll=Math.random()*100,resultKey;
+if(roll<90)resultKey='lb_normal';
+else if(roll<98)resultKey='lb_golden';
+else resultKey='lb_strawberry';
+serverLookBacks++;updateStatsUI();bumpStat(statLookbacks);setStatus('status_lookback','flushing');
+if(myUserId){
+var d=getMyUserData();if(d){
+d.lookBacks=(d.lookBacks||0)+1;
+if(resultKey==='lb_golden')d.goldenPython=(d.goldenPython||0)+1;
+if(resultKey==='lb_strawberry')d.strawberryTower=(d.strawberryTower||0)+1;
+}
+}
+setTimeout(function(){statusMsg.textContent=t(resultKey);statusMsg.className='status-msg'},400);
+setTimeout(function(){renderLB()},500);
+syncToGist()
+}
 
-  // =====================================================================
-  //  Event handlers
-  // =====================================================================
-  function handleFlush() {
-    if (isFlushing) return; // Allow flush even when clogged (causes overflow)
-
-    isFlushing = true;
-    toiletEl.classList.add('flushing');
-    setStatus('status_flushing', 'flushing');
-    createSplash();
-
-    setTimeout(function() {
-      toiletEl.classList.remove('flushing');
-      isFlushing = false;
-
-      serverPeople++;
-      serverFlushes++;
-
-      // Random poop 0.1-3L, cap at 15L capacity
-      var poop = parseFloat((Math.random() * 2.9 + 0.1).toFixed(1));
-      serverPoopVolume = Math.min(serverPoopVolume + poop, CAPACITY);
-
-      if (serverClogged) {
-        serverOverflowCount++;
-        serverOverflowVolume += 2;
-        bumpStat(statOverflowCount);
-        bumpStat(statOverflowVol);
-        // Clogged: poop stays, water overflows
-        statusMsg.textContent = t('status_overflow')
-          .replace('{poop}', poop.toFixed(1))
-          .replace('{overflow}', '2');
-        statusMsg.className = 'status-msg clogged';
-      } else {
-        // Normal: show what was produced, then cleared
-        statusMsg.textContent = t('status_poop').replace('{poop}', poop.toFixed(1));
-        statusMsg.className = 'status-msg';
-        serverPoopVolume = 0; // Flush clears everything
-      }
-
-      updateStatsUI();
-      bumpStat(statPeople);
-      bumpStat(statFlushes);
-
-      // Clog check (only when not already clogged)
-      if (!serverClogged && Math.random() < 0.18) {
-        serverClogged = true;
-        serverClogs++;
-        updateCloggedUI();
-        updateStatsUI();
-        bumpStat(statClogs);
-      }
-
-      syncToGist();
-    }, 650);
-  }
-
-  function handlePlunge() {
-    if (plungerBtn.classList.contains('working')) return;
-    plungerBtn.classList.add('working');
-    setStatus('status_unclogging', 'flushing');
-
-    setTimeout(function() {
-      plungerBtn.classList.remove('working');
-      if (Math.random() < 0.75) {
-        serverClogged = false;
-        updateCloggedUI();
-        syncToGist();
-        setStatus('status_unclogged', '');
-      } else {
-        setStatus('status_unclog_fail', 'clogged');
-      }
-    }, 600);
-  }
-
-  // =====================================================================
-  //  Lookback
-  // =====================================================================
-  function handleLookBack() {
-    var roll = Math.random() * 100;
-    var resultKey;
-    if (roll < 90) {
-      resultKey = 'lb_normal';
-    } else if (roll < 98) {
-      resultKey = 'lb_golden';
-    } else {
-      resultKey = 'lb_strawberry';
-    }
-    serverLookBacks++;
-    updateStatsUI();
-    bumpStat(statLookbacks);
-    setStatus('status_lookback', 'flushing');
-
-    setTimeout(function() {
-      statusMsg.textContent = t(resultKey);
-      statusMsg.className = 'status-msg';
-    }, 400);
-
-    syncToGist();
-  }
-
-  // =====================================================================
-  //  Init
-  // =====================================================================
-  // Language
-  lang = detectLang();
-  applyLanguage();
-
-  // Load latest stats from Gist
-  fetchStats();
-
-  // Events
-  toiletEl.addEventListener('click', handleFlush);
-  plungerBtn.addEventListener('click', handlePlunge);
-  lookbackBtn.addEventListener('click', handleLookBack);
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === ' ' || e.key === 'Enter') {
-      handleFlush();
-      e.preventDefault();
-    }
-  });
-
-  // Set initial status
-  if (!serverClogged) {
-    setStatus('status_default', '');
-  }
+// ===== Init =====
+lang=detectLang();applyLanguage();loadUser();updateUserBtn();fetchStats();
+toiletEl.addEventListener('click',handleFlush);plungerBtn.addEventListener('click',handlePlunge);
+lookbackBtn.addEventListener('click',handleLookBack);
+document.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){handleFlush();e.preventDefault()}});
+if(!serverClogged)setStatus('status_default','');
 
 })();
 </script>
