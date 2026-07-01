@@ -741,7 +741,7 @@ lbList.appendChild(div)
 })
 }
 function renderLB(){renderLBTabs();renderLBList()}
-function __toggleLB(){var p=$('lbPanel'),t=$('lbToggle');if(window.innerWidth<=900){p.classList.toggle('open')}else{var c=p.classList.toggle('collapsed');$('lbBody').style.display=c?'none':'';t.textContent=c?t('lb_expand'):t('lb_collapse')}}
+function __toggleLB(){var p=$('lbPanel'),t=$('lbToggle');if(window.innerWidth<=900){if(p.classList.toggle('open'))$('swPanel').classList.remove('open')}else{var c=p.classList.toggle('collapsed');$('lbBody').style.display=c?'none':'';t.textContent=c?t('lb_expand'):t('lb_collapse')}}
 
 // ===== Signature Wall =====
 function renderSW(){
@@ -752,7 +752,7 @@ var div=document.createElement('div');div.className='sig-item';if(id===myUserId)
 div.textContent=id;sigList.appendChild(div)
 })
 }
-function __toggleSW(){var p=$('swPanel'),t=$('swToggle');if(window.innerWidth<=900){p.classList.toggle('open')}else{var c=p.classList.toggle('collapsed');$('swBody').style.display=c?'none':'';t.textContent=c?t('lb_expand'):t('lb_collapse')}}
+function __toggleSW(){var p=$('swPanel'),t=$('swToggle');if(window.innerWidth<=900){if(p.classList.toggle('open'))$('lbPanel').classList.remove('open')}else{var c=p.classList.toggle('collapsed');$('swBody').style.display=c?'none':'';t.textContent=c?t('lb_expand'):t('lb_collapse')}}
 function __addSignature(){
 var id=myUserId;if(!id||id.length<1)return;
 var isNew=userList.indexOf(id)===-1;
